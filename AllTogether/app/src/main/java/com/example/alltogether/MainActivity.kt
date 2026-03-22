@@ -1,47 +1,26 @@
 package com.example.alltogether
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.example.alltogether.ui.theme.AllTogetherTheme
+import com.example.alltogether.couples.MisParejasActivity
+import com.example.alltogether.login.LoginActivity
+import com.example.alltogether.util.SessionManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent {
-            AllTogetherTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+
+        val sessionManager = SessionManager(this)
+
+        if (sessionManager.isLoggedIn()) {
+            startActivity(Intent(this, MisParejasActivity::class.java))
+        } else {
+            startActivity(Intent(this, LoginActivity::class.java))
         }
-    }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    AllTogetherTheme {
-        Greeting("Android")
+        finish()
     }
 }
