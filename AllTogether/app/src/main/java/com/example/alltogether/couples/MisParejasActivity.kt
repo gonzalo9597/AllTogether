@@ -1,16 +1,13 @@
 package com.example.alltogether.couples
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -52,22 +49,14 @@ import kotlinx.coroutines.withContext
 
 class MisParejasActivity : ComponentActivity() {
 
-    // Servicio mock de parejas
+    // Servicio que devuelve las parejas
     private val service = AllTogetherService()
 
-    // Preferencias para guardar nombre e icono visibles
+    // Preferencias para el nombre visible y el icono visible
     private lateinit var parejaPrefs: ParejaPreferencesManager
 
-    // Lista que realmente pinta Compose en pantalla
+    // Lista que se pinta en pantalla
     private var parejasVisibles by mutableStateOf<List<ParejaVisual>>(emptyList())
-
-    private val dashboardLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            // Si desde dashboard ha habido cambios, recargamos
-            if (result.resultCode == Activity.RESULT_OK) {
-                cargarParejas()
-            }
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,9 +68,7 @@ class MisParejasActivity : ComponentActivity() {
             AllTogetherTheme {
                 PantallaMisParejas(
                     parejas = parejasVisibles,
-                    onOpenDashboard = { idPareja, nombreParejaOriginal ->
-                        abrirDashboard(idPareja, nombreParejaOriginal)
-                    },
+                    onOpenDashboard = ::abrirDashboard,
                     onOpenSettings = {
                         startActivity(Intent(this, SettingsActivity::class.java))
                     },
@@ -97,7 +84,7 @@ class MisParejasActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Cada vez que vuelvas a esta pantalla, recargo
+        // Al volver a esta pantalla, recargamos por si ha habido cambios
         cargarParejas()
     }
 
@@ -105,16 +92,17 @@ class MisParejasActivity : ComponentActivity() {
         val intent = Intent(this, DashboardActivity::class.java)
         intent.putExtra("id_pareja", idPareja)
         intent.putExtra("nombre_pareja", nombreParejaOriginal)
-        dashboardLauncher.launch(intent)
+        startActivity(intent)
     }
 
     private fun cargarParejas() {
         lifecycleScope.launch {
+            // La llamada a internet la hacemos en segundo plano
             val parejasOriginales = withContext(Dispatchers.IO) {
                 service.getParejasUsuario(1)
             }
 
-            // Aquí ya monto la lista con nombre visible e icono visible
+            // Aquí mezclamos lo que viene de AWS con las preferencias locales
             parejasVisibles = parejasOriginales.map { pareja ->
                 ParejaVisual(
                     idPareja = pareja.idPareja,
@@ -123,16 +111,14 @@ class MisParejasActivity : ComponentActivity() {
                         pareja.idPareja,
                         pareja.nombrePareja
                     ),
-                    iconoResId = parejaPrefs.obtenerIconoParejaResId(
-                        pareja.idPareja
-                    )
+                    iconoResId = parejaPrefs.obtenerIconoParejaResId(pareja.idPareja)
                 )
             }
         }
     }
 }
 
-// Modelo simple solo para pintar la pantalla
+// Esta clase solo se usa para pintar la pantalla
 data class ParejaVisual(
     val idPareja: Int,
     val nombreParejaOriginal: String,
@@ -148,7 +134,7 @@ fun PantallaMisParejas(
     onOpenSettings: () -> Unit,
     onOpenAddCouple: () -> Unit
 ) {
-    val tituloParejas = if (parejas.size == 1) "Mi pareja" else "Mis parejas"
+    val titulo = if (parejas.size == 1) "Mi pareja" else "Mis parejas"
 
     Scaffold(
         topBar = {
@@ -163,9 +149,7 @@ fun PantallaMisParejas(
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ),
                 actions = {
-                    IconButton(
-                        onClick = onOpenSettings
-                    ) {
+                    IconButton(onClick = onOpenSettings) {
                         Image(
                             painter = painterResource(id = R.drawable.ajustes),
                             contentDescription = "Ajustes",
@@ -185,7 +169,7 @@ fun PantallaMisParejas(
         ) {
             item {
                 Text(
-                    text = tituloParejas,
+                    text = titulo,
                     style = MaterialTheme.typography.headlineSmall
                 )
             }
@@ -212,9 +196,11 @@ fun PantallaMisParejas(
                         containerColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 ) {
-                    Column(modifier = Modifier.padding(20.dp)) {
-                        Text(text = "+ Añadir pareja", fontSize = 22.sp)
-                    }
+                    Text(
+                        text = "+ Añadir pareja",
+                        fontSize = 22.sp,
+                        modifier = Modifier.padding(20.dp)
+                    )
                 }
             }
         }
@@ -249,9 +235,10 @@ fun ParejaCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            Column {
-                Text(text = nombrePareja, fontSize = 22.sp)
-            }
+            Text(
+                text = nombrePareja,
+                fontSize = 22.sp
+            )
         }
     }
 }
