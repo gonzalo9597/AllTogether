@@ -1,6 +1,8 @@
 package com.example.alltogether.addcouple
 
+import android.app.Activity
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -17,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -24,9 +27,9 @@ import androidx.compose.ui.unit.dp
 import com.example.alltogether.TopAppBarWithBack
 import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.ui.theme.AllTogetherTheme
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AddCoupleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,7 +47,9 @@ class AddCoupleActivity : ComponentActivity() {
 @Composable
 fun PantallaAddCouple() {
     val context = LocalContext.current
+    val activity = context as ComponentActivity
     val service = remember { AllTogetherService() }
+    val coroutineScope = rememberCoroutineScope()
 
     var nombrePareja by remember { mutableStateOf("") }
     var codigo by remember { mutableStateOf("") }
@@ -54,7 +59,7 @@ fun PantallaAddCouple() {
         topBar = {
             TopAppBarWithBack(
                 title = "Añadir pareja",
-                onBackClick = { (context as ComponentActivity).finish() }
+                onBackClick = { activity.finish() }
             )
         }
     ) { innerPadding ->
@@ -80,12 +85,27 @@ fun PantallaAddCouple() {
 
             Button(
                 onClick = {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        val ok = service.crearPareja(nombrePareja)
-                        mensaje = if (ok) {
-                            "Pareja creada. Aquí luego mostraremos el código de invitación"
-                        } else {
-                            "No se pudo crear la pareja"
+                    if (nombrePareja.isBlank()) {
+                        mensaje = "Introduce un nombre para la pareja"
+                    } else {
+                        coroutineScope.launch {
+                            val ok = withContext(Dispatchers.IO) {
+                                service.crearPareja(nombrePareja)
+                            }
+
+                            if (ok) {
+                                Toast.makeText(
+                                    context,
+                                    "Pareja creada correctamente",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+
+                                mensaje = "Pareja creada correctamente"
+                                nombrePareja = ""
+                                activity.setResult(Activity.RESULT_OK)
+                            } else {
+                                mensaje = "No se pudo crear la pareja"
+                            }
                         }
                     }
                 },
@@ -113,12 +133,23 @@ fun PantallaAddCouple() {
 
             Button(
                 onClick = {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        val ok = service.unirseConCodigo(codigo)
-                        mensaje = if (ok) {
-                            "Te has unido a la pareja correctamente"
+                    coroutineScope.launch {
+                        val ok = withContext(Dispatchers.IO) {
+                            service.unirseConCodigo(codigo)
+                        }
+
+                        if (ok) {
+                            Toast.makeText(
+                                context,
+                                "Te has unido a la pareja correctamente",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            mensaje = "Te has unido a la pareja correctamente"
+                            codigo = ""
+                            activity.setResult(Activity.RESULT_OK)
                         } else {
-                            "Código no válido"
+                            mensaje = "Código no válido"
                         }
                     }
                 },

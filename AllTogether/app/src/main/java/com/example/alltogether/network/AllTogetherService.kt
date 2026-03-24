@@ -3,6 +3,7 @@ package com.example.alltogether.network
 import android.util.Log
 import com.example.alltogether.model.Pareja
 import org.json.JSONArray
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -50,12 +51,50 @@ class AllTogetherService {
         }
     }
 
-    // Crear pareja de prueba
+    // Crear pareja llamando al POST de AWS
     suspend fun crearPareja(nombrePareja: String): Boolean {
-        return nombrePareja.isNotBlank()
+        var conexion: HttpURLConnection? = null
+
+        return try {
+            val url = URL("${ApiClient.BASE_URL}/parejas")
+            conexion = url.openConnection() as HttpURLConnection
+            conexion.requestMethod = "POST"
+            conexion.connectTimeout = 10000
+            conexion.readTimeout = 10000
+            conexion.doOutput = true
+            conexion.setRequestProperty("Content-Type", "application/json; charset=UTF-8")
+
+            // Preparamos el JSON que vamos a enviar
+            val jsonBody = JSONObject()
+            jsonBody.put("nombrePareja", nombrePareja)
+
+            // Enviamos el body del POST
+            conexion.outputStream.bufferedWriter(Charsets.UTF_8).use { writer ->
+                writer.write(jsonBody.toString())
+            }
+
+            val codigoRespuesta = conexion.responseCode
+
+            val respuesta = if (codigoRespuesta in 200..299) {
+                conexion.inputStream.bufferedReader().use { it.readText() }
+            } else {
+                conexion.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+            }
+
+            Log.d("AWS_API", "Crear pareja - código: $codigoRespuesta")
+            Log.d("AWS_API", "Crear pareja - respuesta: $respuesta")
+
+            codigoRespuesta in 200..299
+
+        } catch (e: Exception) {
+            Log.e("AWS_API", "Error al crear pareja en AWS", e)
+            false
+        } finally {
+            conexion?.disconnect()
+        }
     }
 
-    // Unirse con código de prueba
+    // De momento sigue siendo mock
     suspend fun unirseConCodigo(codigo: String): Boolean {
         return codigo.isNotBlank()
     }
