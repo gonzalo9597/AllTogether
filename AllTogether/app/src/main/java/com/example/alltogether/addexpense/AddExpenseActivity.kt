@@ -70,7 +70,7 @@ fun PantallaAddExpense(idPareja: Int) {
             OutlinedTextField(
                 value = titulo,
                 onValueChange = { titulo = it },
-                label = { Text("Título del gasto") },
+                label = { Text("Título del gasto OWO") },
                 modifier = Modifier.fillMaxWidth()
             )
 
