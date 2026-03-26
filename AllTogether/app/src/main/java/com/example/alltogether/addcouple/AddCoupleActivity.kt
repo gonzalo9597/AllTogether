@@ -58,7 +58,7 @@ fun PantallaAddCouple() {
     Scaffold(
         topBar = {
             TopAppBarWithBack(
-                title = "Añadir pareja",
+                title = "Añadir parej",
                 onBackClick = { activity.finish() }
             )
         }
