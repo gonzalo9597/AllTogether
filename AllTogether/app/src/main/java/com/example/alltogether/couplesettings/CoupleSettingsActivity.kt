@@ -28,7 +28,12 @@ import com.example.alltogether.TopAppBarWithBack
 import com.example.alltogether.selectoricono.SelectorIconoParejaActivity
 import com.example.alltogether.ui.theme.AllTogetherTheme
 import com.example.alltogether.util.ParejaPreferencesManager
-
+import androidx.compose.material3.CircularProgressIndicator
+import com.example.alltogether.network.AllTogetherService
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.material3.MaterialTheme
 class CoupleSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +41,8 @@ class CoupleSettingsActivity : ComponentActivity() {
 
         val idPareja = intent.getIntExtra("id_pareja", -1)
         val nombrePareja = intent.getStringExtra("nombre_pareja") ?: "Pareja"
+
+
 
         setContent {
             AllTogetherTheme {
@@ -49,6 +56,8 @@ class CoupleSettingsActivity : ComponentActivity() {
 fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
     val context = LocalContext.current
     val prefs = remember { ParejaPreferencesManager(context) }
+    var codigoInvitacion by remember { mutableStateOf("") }
+    var cargandoCodigo by remember { mutableStateOf(false) }
 
     var nombreVisible by remember {
         mutableStateOf(prefs.obtenerNombreVisible(idPareja, nombrePareja))
@@ -67,6 +76,8 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
             nombreIcono = nuevoNombreIcono
         }
     }
+    val service = remember { AllTogetherService() }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -105,6 +116,51 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                     .fillMaxWidth()
                     .padding(top = 20.dp)
             )
+            // Sección para compartir el código de invitación con la pareja
+            Text(
+                text = "Invitar a tu pareja",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 24.dp)
+            )
+
+            Button(
+                onClick = {
+                    cargandoCodigo = true
+                    coroutineScope.launch {
+                        val resultado = withContext(Dispatchers.IO) {
+                            service.generarCodigoInvitacion(idPareja)
+                        }
+                        resultado
+                            .onSuccess { codigo -> codigoInvitacion = codigo }
+                            .onFailure { codigoInvitacion = "Error al generar el código" }
+                        cargandoCodigo = false
+                    }
+                },
+                enabled = !cargandoCodigo,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                if (cargandoCodigo) {
+                    CircularProgressIndicator()
+                } else {
+                    Text("Generar código de invitación")
+                }
+            }
+
+// Muestra el código generado para que el usuario lo comparta
+            if (codigoInvitacion.isNotBlank()) {
+                Text(
+                    text = "Código: $codigoInvitacion",
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.padding(top = 12.dp)
+                )
+                Text(
+                    text = "Comparte este código con tu pareja para que se una",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
 
             Button(
                 onClick = {
