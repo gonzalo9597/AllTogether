@@ -34,6 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ButtonDefaults
 class CoupleSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +42,7 @@ class CoupleSettingsActivity : ComponentActivity() {
 
         val idPareja = intent.getIntExtra("id_pareja", -1)
         val nombrePareja = intent.getStringExtra("nombre_pareja") ?: "Pareja"
+
 
 
 
@@ -58,7 +60,8 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
     val prefs = remember { ParejaPreferencesManager(context) }
     var codigoInvitacion by remember { mutableStateOf("") }
     var cargandoCodigo by remember { mutableStateOf(false) }
-
+    var mostrarConfirmacion by remember { mutableStateOf(false) }
+    var cargandoAbandonar by remember { mutableStateOf(false) }
     var nombreVisible by remember {
         mutableStateOf(prefs.obtenerNombreVisible(idPareja, nombrePareja))
     }
@@ -161,7 +164,78 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
+            // Sección para abandonar la pareja
+            Text(
+                text = "Zona de peligro",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(top = 24.dp)
+            )
 
+            if (!mostrarConfirmacion) {
+                // Primer click — pedir confirmación antes de abandonar
+                Button(
+                    onClick = { mostrarConfirmacion = true },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    Text("Abandonar pareja")
+                }
+            } else {
+                // Segunda pantalla — confirmar que realmente quiere abandonar
+                Text(
+                    text = "¿Estás seguro? Esta acción no se puede deshacer.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                Button(
+                    onClick = {
+                        cargandoAbandonar = true
+                        coroutineScope.launch {
+                            val resultado = withContext(Dispatchers.IO) {
+                                service.abandonarPareja(idPareja)
+                            }
+                            resultado
+                                .onSuccess {
+                                    // Volver a MisParejas tras abandonar
+                                    val activity = context as ComponentActivity
+                                    activity.setResult(Activity.RESULT_OK)
+                                    activity.finish()
+                                }
+                                .onFailure {
+                                    mostrarConfirmacion = false
+                                    cargandoAbandonar = false
+                                }
+                        }
+                    },
+                    enabled = !cargandoAbandonar,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    if (cargandoAbandonar) {
+                        CircularProgressIndicator()
+                    } else {
+                        Text("Sí, abandonar pareja")
+                    }
+                }
+
+                Button(
+                    onClick = { mostrarConfirmacion = false },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
+                ) {
+                    Text("Cancelar")
+                }
+            }
             Button(
                 onClick = {
                     prefs.guardarNombreVisible(idPareja, nombreVisible)

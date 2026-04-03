@@ -128,6 +128,7 @@ fun PantallaRegister() {
                                 )
                                 // Inyectar token en el cliente HTTP para esta sesión
                                 ApiClient.token = loginResponse.token
+                                ApiClient.appContext = context.applicationContext
 
                                 // Tras el registro vamos directamente a MisParejas
                                 // sin pasar por Login — el token ya está listo

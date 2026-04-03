@@ -100,6 +100,7 @@ fun PantallaAddCouple() {
                                     mensaje = "Pareja creada correctamente"
                                     nombrePareja = ""
                                     activity.setResult(Activity.RESULT_OK)
+                                    activity.finish()
                                 }
                                 .onFailure {
                                     mensaje = "No se pudo crear la pareja"
@@ -150,6 +151,7 @@ fun PantallaAddCouple() {
                                     mensaje = "Te has unido a la pareja correctamente"
                                     codigo = ""
                                     activity.setResult(Activity.RESULT_OK)
+                                    activity.finish()
                                 }
                                 .onFailure {
                                     mensaje = "Código no válido o ya utilizado"

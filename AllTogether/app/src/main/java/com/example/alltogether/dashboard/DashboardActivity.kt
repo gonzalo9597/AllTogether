@@ -25,16 +25,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.lifecycleScope
 import com.example.alltogether.R
 import com.example.alltogether.addexpense.AddExpenseActivity
 import com.example.alltogether.couplesettings.CoupleSettingsActivity
@@ -51,26 +54,18 @@ class DashboardActivity : ComponentActivity() {
     private var idPareja: Int = -1
     private var nombreParejaOriginal: String = "Pareja"
     private lateinit var parejaPrefs: ParejaPreferencesManager
-    private val service = AllTogetherService()
-
-    private var nombreVisible by mutableStateOf("Pareja")
     private var huboCambios by mutableStateOf(false)
-    // Lista de gastos que se muestra en pantalla
-    private var gastos by mutableStateOf<List<Gasto>>(emptyList())
+    private var nombreVisible by mutableStateOf("Pareja")
 
     private val ajustesLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 cargarDatosPantalla()
                 huboCambios = true
-            }
-        }
 
-    private val addExpenseLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK || result.resultCode == Activity.RESULT_CANCELED) {
-                // Recargar gastos al volver de añadir gasto
-                cargarGastos()
+                // Si venimos de abandonar la pareja, cerramos el Dashboard también
+                // MisParejasActivity recargará la lista al hacer onResume
+                finish()
             }
         }
 
@@ -81,27 +76,19 @@ class DashboardActivity : ComponentActivity() {
         idPareja = intent.getIntExtra("id_pareja", -1)
         nombreParejaOriginal = intent.getStringExtra("nombre_pareja") ?: "Pareja"
         parejaPrefs = ParejaPreferencesManager(this)
-
         cargarDatosPantalla()
-        cargarGastos()
 
         setContent {
             AllTogetherTheme {
                 PantallaDashboard(
                     nombrePareja = nombreVisible,
                     idPareja = idPareja,
-                    gastos = gastos,
                     onBackClick = { finish() },
                     onSettingsClick = { abrirAjustesPareja() },
                     onAddExpenseClick = { abrirAnadirGasto() }
                 )
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        cargarGastos()
     }
 
     private fun abrirAjustesPareja() {
@@ -114,20 +101,11 @@ class DashboardActivity : ComponentActivity() {
     private fun abrirAnadirGasto() {
         val intent = Intent(this, AddExpenseActivity::class.java)
         intent.putExtra("id_pareja", idPareja)
-        addExpenseLauncher.launch(intent)
+        startActivity(intent)
     }
 
     private fun cargarDatosPantalla() {
         nombreVisible = parejaPrefs.obtenerNombreVisible(idPareja, nombreParejaOriginal)
-    }
-
-    // Carga los gastos de la pareja desde la API en segundo plano
-    private fun cargarGastos() {
-        lifecycleScope.launch {
-            gastos = withContext(Dispatchers.IO) {
-                service.getGastos(idPareja)
-            }
-        }
     }
 
     override fun finish() {
@@ -137,16 +115,31 @@ class DashboardActivity : ComponentActivity() {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@androidx.compose.runtime.Composable
+@Composable
 fun PantallaDashboard(
     nombrePareja: String,
     idPareja: Int,
-    gastos: List<Gasto>,
     onBackClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAddExpenseClick: () -> Unit
 ) {
-    val context = LocalContext.current
+    val service = remember { AllTogetherService() }
+    val coroutineScope = rememberCoroutineScope()
+
+    // contador que usamos para forzar la recarga de gastos
+    var recargar by remember { mutableIntStateOf(0) }
+    var gastos by remember { mutableStateOf<List<Gasto>>(emptyList()) }
+
+    LaunchedEffect(recargar) {
+        val nuevosGastos = withContext(Dispatchers.IO) {
+            service.getGastos(idPareja)
+        }
+        android.util.Log.d("GASTOS", "Cargados ${nuevosGastos.size} gastos, recargar=$recargar")
+        nuevosGastos.forEach {
+            android.util.Log.d("GASTOS", "Gasto ${it.idGasto}: esPendiente=${it.esPendiente}")
+        }
+        gastos = nuevosGastos
+    }
 
     Scaffold(
         topBar = {
@@ -195,7 +188,6 @@ fun PantallaDashboard(
                     )
                 }
             } else {
-                // Resumen de gastos pendientes
                 item {
                     val totalPendiente = gastos
                         .filter { it.esPendiente }
@@ -207,22 +199,34 @@ fun PantallaDashboard(
                     )
                 }
 
-                // Lista de gastos
                 items(gastos) { gasto ->
-                    GastoCard(gasto = gasto)
+                    GastoCard(
+                        gasto = gasto,
+                        onSaldar = { idGasto ->
+                            coroutineScope.launch {
+                                withContext(Dispatchers.IO) {
+                                    service.saldarDeuda(idGasto)
+                                }
+                                // Incrementar el contador para forzar recarga
+                                recargar++
+                            }
+                        }
+                    )
                 }
             }
         }
     }
 }
 
-// Tarjeta que muestra los datos de un gasto
-@androidx.compose.runtime.Composable
-fun GastoCard(gasto: Gasto) {
+@Composable
+fun GastoCard(gasto: Gasto, onSaldar: (Int) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (gasto.esPendiente)
+                MaterialTheme.colorScheme.surfaceVariant
+            else
+                MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
         Column(
@@ -250,7 +254,6 @@ fun GastoCard(gasto: Gasto) {
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            // Mostrar el reparto
             if (gasto.importeUsuario1 != null && gasto.importeUsuario2 != null) {
                 Text(
                     text = "Reparto: ${"%.2f".format(gasto.importeUsuario1)}€ / ${"%.2f".format(gasto.importeUsuario2)}€",
@@ -266,6 +269,23 @@ fun GastoCard(gasto: Gasto) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
                 )
+            }
+
+            Text(
+                text = if (gasto.esPendiente) "⏳ Pendiente" else "✅ Saldado",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+
+            if (gasto.esPendiente) {
+                Button(
+                    onClick = { onSaldar(gasto.idGasto) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    Text("Marcar mi parte como pagada")
+                }
             }
         }
     }

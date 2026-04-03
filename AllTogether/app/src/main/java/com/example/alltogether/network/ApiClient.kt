@@ -1,42 +1,56 @@
 
 package com.example.alltogether.network
 
+import android.content.Context
+import android.content.Intent
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 
-// Objeto singleton — solo existe una instancia en toda la app
-// Centraliza toda la configuración HTTP para no repetirla en cada petición
 object ApiClient {
 
-    // URL base de nuestra API en AWS — todas las peticiones parten de aquí
     const val BASE_URL = "https://hmslzcrv00.execute-api.eu-south-2.amazonaws.com"
 
-    // El JWT token del usuario autenticado
-    // Es null cuando no hay sesión iniciada
-    // Se rellena tras el login y se incluye automáticamente en cada petición
     var token: String? = null
 
-    // Cliente HTTP compartido por toda la app
-    // CIO es el motor recomendado para Android con Ktor
-    val http = HttpClient(CIO) {
+    // Contexto de la app necesario para redirigir a Login cuando el token caduca
+    var appContext: Context? = null
 
-        // Plugin que convierte automáticamente entre JSON y objetos Kotlin
-        // ignoreUnknownKeys = true evita crashes si el servidor añade campos nuevos
-        // que aún no tenemos en nuestros data classes
+    val http = HttpClient(CIO) {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
         }
 
-        // Esta configuración se aplica a TODAS las peticiones automáticamente
-        // Si hay token, añade el header "Authorization: Bearer <token>"
-        // Así no hay que acordarse de añadirlo manualmente en cada llamada
         defaultRequest {
             token?.let { header("Authorization", "Bearer $it") }
+        }
+
+        // Interceptor que detecta respuestas 401 y cierra la sesión automáticamente
+        install(HttpCallValidator) {
+            validateResponse { response ->
+                if (response.status.value == 401) {
+                    // Token caducado o inválido — limpiar sesión y redirigir a Login
+                    appContext?.let { ctx ->
+                        token = null
+                        val sessionManager = com.example.alltogether.util.SessionManager(ctx)
+                        sessionManager.clearSession()
+
+                        val intent = com.example.alltogether.login.LoginActivity::class.java
+                        ctx.startActivity(
+                            Intent(ctx, intent).apply {
+                                // Limpiar el back stack para que no pueda volver atrás
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                                putExtra("sesion_caducada", true)
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }

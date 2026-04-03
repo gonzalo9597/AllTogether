@@ -196,4 +196,53 @@ class AllTogetherService {
             emptyList()
         }
     }
+    // Marca la parte del usuario autenticado como pagada en un gasto
+// Si ambos usuarios pagan, el gasto se marca automáticamente como no pendiente
+    suspend fun saldarDeuda(idGasto: Int): Result<String> {
+        return try {
+            val response = ApiClient.http.post("${ApiClient.BASE_URL}/gastos/saldar") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("idGasto" to idGasto))
+            }
+            if (response.status.value in 200..299) {
+                Result.success("Pago registrado correctamente")
+            } else {
+                Result.failure(Exception("Error al registrar el pago"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    // Elimina al usuario autenticado de una pareja
+// Si era el último miembro, la pareja se marca como inactiva en la RDS
+    suspend fun abandonarPareja(idPareja: Int): Result<String> {
+        return try {
+            val response = ApiClient.http.post("${ApiClient.BASE_URL}/parejas/abandonar") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("idPareja" to idPareja))
+            }
+            if (response.status.value in 200..299) {
+                Result.success("Has abandonado la pareja correctamente")
+            } else {
+                Result.failure(Exception("Error al abandonar la pareja"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    // Marca la cuenta del usuario como inactiva en la RDS
+// Se conserva el historial de gastos por integridad de datos
+// El usuario es eliminado de todas sus parejas automáticamente
+    suspend fun eliminarCuenta(): Result<String> {
+        return try {
+            val response = ApiClient.http.delete("${ApiClient.BASE_URL}/usuario")
+            if (response.status.value in 200..299) {
+                Result.success("Cuenta eliminada correctamente")
+            } else {
+                Result.failure(Exception("Error al eliminar la cuenta"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

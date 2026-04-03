@@ -53,6 +53,8 @@ fun PantallaLogin() {
     val service = remember { AllTogetherService() }
     val sessionManager = remember { SessionManager(context) }
     val coroutineScope = rememberCoroutineScope()
+    val activity = context as ComponentActivity
+    val sesionCaducada = activity.intent.getBooleanExtra("sesion_caducada", false)
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -75,6 +77,14 @@ fun PantallaLogin() {
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
+            if (sesionCaducada) {
+                Text(
+                    text = "Tu sesión ha caducado. Por favor inicia sesión de nuevo.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -121,7 +131,7 @@ fun PantallaLogin() {
                                 )
                                 // 2. Inyectar token en el cliente HTTP para esta sesión
                                 ApiClient.token = loginResponse.token
-
+                                ApiClient.appContext = context.applicationContext
                                 // 3. Navegar a la pantalla principal
                                 context.startActivity(
                                     Intent(context, MisParejasActivity::class.java)

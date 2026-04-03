@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
             // Hay sesión guardada — restaurar el token en el cliente HTTP
             // para que las peticiones lleven el Authorization header automáticamente
             ApiClient.token = sessionManager.getToken()
-
+            ApiClient.appContext = applicationContext
             // Ir directamente a MisParejas sin pasar por Login
             startActivity(Intent(this, MisParejasActivity::class.java))
         } else {
