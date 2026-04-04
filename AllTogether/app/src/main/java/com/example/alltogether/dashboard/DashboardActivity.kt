@@ -28,7 +28,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,6 +39,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import com.example.alltogether.R
 import com.example.alltogether.addexpense.AddExpenseActivity
+import com.example.alltogether.addexpense.AddRecurringExpenseActivity
 import com.example.alltogether.couplesettings.CoupleSettingsActivity
 import com.example.alltogether.model.Gasto
 import com.example.alltogether.network.AllTogetherService
@@ -56,17 +56,22 @@ class DashboardActivity : ComponentActivity() {
     private lateinit var parejaPrefs: ParejaPreferencesManager
     private var huboCambios by mutableStateOf(false)
     private var nombreVisible by mutableStateOf("Pareja")
+    // Contador para forzar recarga de gastos desde la Activity
+    private var recargarGastos by mutableStateOf(0)
 
     private val ajustesLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 cargarDatosPantalla()
                 huboCambios = true
-
-                // Si venimos de abandonar la pareja, cerramos el Dashboard también
-                // MisParejasActivity recargará la lista al hacer onResume
                 finish()
             }
+        }
+
+    // Launcher para añadir gasto — recarga los gastos al volver
+    private val addExpenseLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            recargarGastos++
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,6 +88,7 @@ class DashboardActivity : ComponentActivity() {
                 PantallaDashboard(
                     nombrePareja = nombreVisible,
                     idPareja = idPareja,
+                    recargar = recargarGastos,
                     onBackClick = { finish() },
                     onSettingsClick = { abrirAjustesPareja() },
                     onAddExpenseClick = { abrirAnadirGasto() }
@@ -101,7 +107,7 @@ class DashboardActivity : ComponentActivity() {
     private fun abrirAnadirGasto() {
         val intent = Intent(this, AddExpenseActivity::class.java)
         intent.putExtra("id_pareja", idPareja)
-        startActivity(intent)
+        addExpenseLauncher.launch(intent)
     }
 
     private fun cargarDatosPantalla() {
@@ -119,26 +125,20 @@ class DashboardActivity : ComponentActivity() {
 fun PantallaDashboard(
     nombrePareja: String,
     idPareja: Int,
+    recargar: Int,
     onBackClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAddExpenseClick: () -> Unit
 ) {
     val service = remember { AllTogetherService() }
     val coroutineScope = rememberCoroutineScope()
-
-    // contador que usamos para forzar la recarga de gastos
-    var recargar by remember { mutableIntStateOf(0) }
     var gastos by remember { mutableStateOf<List<Gasto>>(emptyList()) }
 
+    // Se ejecuta cada vez que recargar cambia
     LaunchedEffect(recargar) {
-        val nuevosGastos = withContext(Dispatchers.IO) {
+        gastos = withContext(Dispatchers.IO) {
             service.getGastos(idPareja)
         }
-        android.util.Log.d("GASTOS", "Cargados ${nuevosGastos.size} gastos, recargar=$recargar")
-        nuevosGastos.forEach {
-            android.util.Log.d("GASTOS", "Gasto ${it.idGasto}: esPendiente=${it.esPendiente}")
-        }
-        gastos = nuevosGastos
     }
 
     Scaffold(
@@ -171,11 +171,22 @@ fun PantallaDashboard(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
+                val context = LocalContext.current
                 Button(
                     onClick = onAddExpenseClick,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("+ Añadir gasto")
+                }
+                Button(
+                    onClick = {
+                        val intent = Intent(context, AddRecurringExpenseActivity::class.java)
+                        intent.putExtra("id_pareja", idPareja)
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("+ Gasto recurrente")
                 }
             }
 
@@ -207,8 +218,7 @@ fun PantallaDashboard(
                                 withContext(Dispatchers.IO) {
                                     service.saldarDeuda(idGasto)
                                 }
-                                // Incrementar el contador para forzar recarga
-                                recargar++
+                                recargar
                             }
                         }
                     )

@@ -245,4 +245,67 @@ class AllTogetherService {
             Result.failure(e)
         }
     }
+    // Data class para crear un gasto recurrente
+    @Serializable
+    data class GastoRecurrenteRequest(
+        val idPareja: Int,
+        val tituloGasto: String,
+        val cantidadTotal: Double,
+        val frecuencia: String = "MENSUAL",
+        val diaDelMes: Int = 1,
+        val idCategoria: Int = 1,
+        val modoReparto: String = "MITAD",
+        val comentario: String = ""
+    )
+
+    // Crea una plantilla de gasto recurrente en la RDS
+// AWS EventBridge se encargará de generar el gasto automáticamente cada vez que toque
+    suspend fun crearGastoRecurrente(
+        idPareja: Int,
+        tituloGasto: String,
+        cantidadTotal: Double,
+        frecuencia: String = "MENSUAL",
+        diaDelMes: Int = 1,
+        idCategoria: Int = 1,
+        comentario: String = ""
+    ): Result<String> {
+        return try {
+            val response = ApiClient.http.post("${ApiClient.BASE_URL}/recurrentes") {
+                contentType(ContentType.Application.Json)
+                setBody(GastoRecurrenteRequest(
+                    idPareja = idPareja,
+                    tituloGasto = tituloGasto,
+                    cantidadTotal = cantidadTotal,
+                    frecuencia = frecuencia,
+                    diaDelMes = diaDelMes,
+                    idCategoria = idCategoria,
+                    comentario = comentario
+                ))
+            }
+            if (response.status.value in 200..299) {
+                Result.success("Gasto recurrente creado correctamente")
+            } else {
+                Result.failure(Exception("Error al crear el gasto recurrente"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    // Envía el token FCM del dispositivo al servidor para recibir notificaciones push
+// Se llama automáticamente cuando Firebase genera un token nuevo
+    suspend fun guardarTokenFCM(fcmToken: String): Result<String> {
+        return try {
+            val response = ApiClient.http.post("${ApiClient.BASE_URL}/usuario/fcm-token") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("fcmToken" to fcmToken))
+            }
+            if (response.status.value in 200..299) {
+                Result.success("Token FCM guardado correctamente")
+            } else {
+                Result.failure(Exception("Error al guardar el token FCM"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
