@@ -99,7 +99,7 @@ class MisParejasActivity : ComponentActivity() {
         lifecycleScope.launch {
             // La llamada a internet la hacemos en segundo plano
             val parejasOriginales = withContext(Dispatchers.IO) {
-                service.getParejasUsuario(1)
+                service.getParejasUsuario()
             }
 
             // Aquí mezclamos lo que viene de AWS con las preferencias locales

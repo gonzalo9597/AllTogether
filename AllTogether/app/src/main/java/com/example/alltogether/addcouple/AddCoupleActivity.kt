@@ -30,12 +30,11 @@ import com.example.alltogether.ui.theme.AllTogetherTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
+import androidx.compose.material3.CircularProgressIndicator
 class AddCoupleActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-
         setContent {
             AllTogetherTheme {
                 PantallaAddCouple()
@@ -54,6 +53,8 @@ fun PantallaAddCouple() {
     var nombrePareja by remember { mutableStateOf("") }
     var codigo by remember { mutableStateOf("") }
     var mensaje by remember { mutableStateOf("") }
+    var cargando by remember { mutableStateOf(false) }
+    var cargandoUnirse by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -88,34 +89,37 @@ fun PantallaAddCouple() {
                     if (nombrePareja.isBlank()) {
                         mensaje = "Introduce un nombre para la pareja"
                     } else {
+                        cargando = true
                         coroutineScope.launch {
-                            val ok = withContext(Dispatchers.IO) {
+                            val resultado = withContext(Dispatchers.IO) {
                                 service.crearPareja(nombrePareja)
                             }
-
-                            if (ok) {
-                                Toast.makeText(
-                                    context,
-                                    "Pareja creada correctamente",
-                                    Toast.LENGTH_SHORT
-                                ).show()
-
-                                mensaje = "Pareja creada correctamente"
-                                nombrePareja = ""
-                                activity.setResult(Activity.RESULT_OK)
-                            } else {
-                                mensaje = "No se pudo crear la pareja"
-                            }
+                            resultado
+                                .onSuccess {
+                                    Toast.makeText(context, "Pareja creada correctamente", Toast.LENGTH_SHORT).show()
+                                    mensaje = "Pareja creada correctamente"
+                                    nombrePareja = ""
+                                    activity.setResult(Activity.RESULT_OK)
+                                    activity.finish()
+                                }
+                                .onFailure {
+                                    mensaje = "No se pudo crear la pareja"
+                                }
+                            cargando = false
                         }
                     }
                 },
+                enabled = !cargando,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp)
             ) {
-                Text("Crear pareja")
+                if (cargando) {
+                    CircularProgressIndicator()
+                } else {
+                    Text("Crear pareja")
+                }
             }
-
             Text(
                 text = "O unirse con código",
                 style = MaterialTheme.typography.titleLarge,
@@ -133,31 +137,39 @@ fun PantallaAddCouple() {
 
             Button(
                 onClick = {
-                    coroutineScope.launch {
-                        val ok = withContext(Dispatchers.IO) {
-                            service.unirseConCodigo(codigo)
-                        }
-
-                        if (ok) {
-                            Toast.makeText(
-                                context,
-                                "Te has unido a la pareja correctamente",
-                                Toast.LENGTH_SHORT
-                            ).show()
-
-                            mensaje = "Te has unido a la pareja correctamente"
-                            codigo = ""
-                            activity.setResult(Activity.RESULT_OK)
-                        } else {
-                            mensaje = "Código no válido"
+                    if (codigo.isBlank()) {
+                        mensaje = "Introduce un código de invitación"
+                    } else {
+                        cargandoUnirse = true
+                        coroutineScope.launch {
+                            val resultado = withContext(Dispatchers.IO) {
+                                service.unirseConCodigo(codigo)
+                            }
+                            resultado
+                                .onSuccess {
+                                    Toast.makeText(context, "Te has unido a la pareja correctamente", Toast.LENGTH_SHORT).show()
+                                    mensaje = "Te has unido a la pareja correctamente"
+                                    codigo = ""
+                                    activity.setResult(Activity.RESULT_OK)
+                                    activity.finish()
+                                }
+                                .onFailure {
+                                    mensaje = "Código no válido o ya utilizado"
+                                }
+                            cargandoUnirse = false
                         }
                     }
                 },
+                enabled = !cargandoUnirse,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp)
             ) {
-                Text("Unirse")
+                if (cargandoUnirse) {
+                    CircularProgressIndicator()
+                } else {
+                    Text("Unirse")
+                }
             }
 
             if (mensaje.isNotBlank()) {

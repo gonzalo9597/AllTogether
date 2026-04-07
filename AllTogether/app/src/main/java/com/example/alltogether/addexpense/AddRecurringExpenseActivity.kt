@@ -1,6 +1,5 @@
 package com.example.alltogether.addexpense
 
-import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,6 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -31,21 +34,22 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class AddExpenseActivity : ComponentActivity() {
+class AddRecurringExpenseActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val idPareja = intent.getIntExtra("id_pareja", -1)
         setContent {
             AllTogetherTheme {
-                PantallaAddExpense(idPareja)
+                PantallaAddRecurringExpense(idPareja)
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PantallaAddExpense(idPareja: Int) {
+fun PantallaAddRecurringExpense(idPareja: Int) {
     val context = LocalContext.current
     val service = remember { AllTogetherService() }
     val coroutineScope = rememberCoroutineScope()
@@ -54,15 +58,21 @@ fun PantallaAddExpense(idPareja: Int) {
     var cantidad by remember { mutableStateOf("") }
     var comentario by remember { mutableStateOf("") }
     var mensaje by remember { mutableStateOf("") }
-    // Desactiva el botón mientras se procesa la petición
     var cargando by remember { mutableStateOf(false) }
-    val activity = context as ComponentActivity
+
+    // Selector de frecuencia
+    val frecuencias = listOf("DIARIO", "SEMANAL", "MENSUAL", "ANUAL")
+    var frecuenciaSeleccionada by remember { mutableStateOf("MENSUAL") }
+    var expandido by remember { mutableStateOf(false) }
+
+    // Día del mes para gastos mensuales
+    var diaDelMes by remember { mutableStateOf("1") }
 
     Scaffold(
         topBar = {
             TopAppBarWithBack(
-                title = "Añadir gasto",
-                onBackClick = { (context as androidx.activity.ComponentActivity).finish() }
+                title = "Gasto recurrente",
+                onBackClick = { (context as ComponentActivity).finish() }
             )
         }
     ) { innerPadding ->
@@ -88,6 +98,52 @@ fun PantallaAddExpense(idPareja: Int) {
                     .padding(top = 8.dp)
             )
 
+            // Selector de frecuencia con dropdown
+            ExposedDropdownMenuBox(
+                expanded = expandido,
+                onExpandedChange = { expandido = !expandido },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                OutlinedTextField(
+                    value = frecuenciaSeleccionada,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Frecuencia") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandido) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                )
+                ExposedDropdownMenu(
+                    expanded = expandido,
+                    onDismissRequest = { expandido = false }
+                ) {
+                    frecuencias.forEach { frecuencia ->
+                        DropdownMenuItem(
+                            text = { Text(frecuencia) },
+                            onClick = {
+                                frecuenciaSeleccionada = frecuencia
+                                expandido = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Mostrar campo día del mes solo si es mensual
+            if (frecuenciaSeleccionada == "MENSUAL") {
+                OutlinedTextField(
+                    value = diaDelMes,
+                    onValueChange = { diaDelMes = it },
+                    label = { Text("Día del mes (1-28)") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                )
+            }
+
             OutlinedTextField(
                 value = comentario,
                 onValueChange = { comentario = it },
@@ -99,10 +155,9 @@ fun PantallaAddExpense(idPareja: Int) {
 
             Button(
                 onClick = {
-                    // Validar campos antes de enviar
                     val cantidadDouble = cantidad.toDoubleOrNull()
                     if (titulo.isBlank()) {
-                        mensaje = "Introduce un título para el gasto"
+                        mensaje = "Introduce un título"
                         return@Button
                     }
                     if (cantidadDouble == null || cantidadDouble <= 0) {
@@ -115,26 +170,26 @@ fun PantallaAddExpense(idPareja: Int) {
 
                     coroutineScope.launch {
                         val resultado = withContext(Dispatchers.IO) {
-                            service.guardarGasto(
+                            service.crearGastoRecurrente(
                                 idPareja = idPareja,
                                 tituloGasto = titulo,
                                 cantidadTotal = cantidadDouble,
+                                frecuencia = frecuenciaSeleccionada,
+                                diaDelMes = diaDelMes.toIntOrNull() ?: 1,
                                 comentario = comentario
-                                // modoReparto es MITAD por defecto
                             )
                         }
                         resultado
-                            .onSuccess { gasto ->
-                                mensaje = "Gasto guardado — cada uno paga ${gasto.importeUsuario1}€"
+                            .onSuccess {
+                                mensaje = "Gasto recurrente creado correctamente"
                                 titulo = ""
                                 cantidad = ""
                                 comentario = ""
-                                kotlinx.coroutines.delay(1500)
-                                activity.setResult(Activity.RESULT_OK)
-                                activity.finish() // <- añadir esta línea
+                                // Volver atrás tras crear
+                                (context as ComponentActivity).finish()
                             }
                             .onFailure {
-                                mensaje = "No se pudo guardar el gasto"
+                                mensaje = "No se pudo crear el gasto recurrente"
                             }
                         cargando = false
                     }
@@ -147,7 +202,7 @@ fun PantallaAddExpense(idPareja: Int) {
                 if (cargando) {
                     CircularProgressIndicator()
                 } else {
-                    Text("Guardar gasto")
+                    Text("Crear gasto recurrente")
                 }
             }
 
