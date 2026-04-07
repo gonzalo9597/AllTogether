@@ -1,5 +1,6 @@
 package com.example.alltogether.addexpense
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -55,6 +56,7 @@ fun PantallaAddExpense(idPareja: Int) {
     var mensaje by remember { mutableStateOf("") }
     // Desactiva el botón mientras se procesa la petición
     var cargando by remember { mutableStateOf(false) }
+    val activity = context as ComponentActivity
 
     Scaffold(
         topBar = {
@@ -127,6 +129,9 @@ fun PantallaAddExpense(idPareja: Int) {
                                 titulo = ""
                                 cantidad = ""
                                 comentario = ""
+                                kotlinx.coroutines.delay(1500)
+                                activity.setResult(Activity.RESULT_OK)
+                                activity.finish() // <- añadir esta línea
                             }
                             .onFailure {
                                 mensaje = "No se pudo guardar el gasto"

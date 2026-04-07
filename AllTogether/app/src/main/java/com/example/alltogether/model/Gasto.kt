@@ -32,5 +32,6 @@ data class Gasto(
     val importeUsuario1: Double? = null,
     val importeUsuario2: Double? = null,
     val pagadoUsuario1: Boolean,
-    val pagadoUsuario2: Boolean
+    val pagadoUsuario2: Boolean,
+    val nombreCategoria: String = ""
 )

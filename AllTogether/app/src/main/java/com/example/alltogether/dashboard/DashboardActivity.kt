@@ -36,6 +36,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.Image
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.res.painterResource
 import com.example.alltogether.R
 import com.example.alltogether.addexpense.AddExpenseActivity
@@ -133,13 +136,82 @@ fun PantallaDashboard(
     val service = remember { AllTogetherService() }
     val coroutineScope = rememberCoroutineScope()
     var gastos by remember { mutableStateOf<List<Gasto>>(emptyList()) }
+    var gastoEditando by remember { mutableStateOf<Gasto?>(null) }
+    var recargarInterno by remember { mutableStateOf(recargar) }
+    var balance by remember { mutableStateOf<AllTogetherService.Balance?>(null) }
+    var filtroEstado by remember { mutableStateOf("TODOS") }
+    var filtroFecha by remember { mutableStateOf("TODOS") }
+    var filtroOrden by remember { mutableStateOf("FECHA_DESC") }
+    var filtroCategoria by remember { mutableStateOf("TODAS") }
+    var mostrarFiltros by remember { mutableStateOf(false) }
 
-    // Se ejecuta cada vez que recargar cambia
-    LaunchedEffect(recargar) {
-        gastos = withContext(Dispatchers.IO) {
-            service.getGastos(idPareja)
-        }
+    LaunchedEffect(recargar, recargarInterno) {
+        gastos = withContext(Dispatchers.IO) { service.getGastos(idPareja) }
+        val balanceResult = withContext(Dispatchers.IO) { service.getBalance(idPareja) }
+        balanceResult.onSuccess { balance = it }
     }
+
+    // Diálogo de edición
+    gastoEditando?.let { gasto ->
+        EditarGastoDialog(
+            gasto = gasto,
+            onConfirmar = { titulo, cantidad, comentario ->
+                coroutineScope.launch {
+                    withContext(Dispatchers.IO) {
+                        service.editarGasto(
+                            idGasto = gasto.idGasto,
+                            tituloGasto = titulo,
+                            cantidadTotal = cantidad,
+                            comentario = comentario
+                        )
+                    }
+                    gastoEditando = null
+                    recargarInterno++
+                }
+            },
+            onCancelar = { gastoEditando = null }
+        )
+    }
+
+    // Filtros aplicados antes del Scaffold
+    val gastosFiltrados = gastos
+        .filter { gasto ->
+            when (filtroEstado) {
+                "PENDIENTE" -> gasto.esPendiente
+                "SALDADO" -> !gasto.esPendiente
+                else -> true
+            }
+        }
+        .filter { gasto ->
+            when (filtroFecha) {
+                "ESTE_MES" -> {
+                    val cal = java.util.Calendar.getInstance()
+                    val anyo = cal.get(java.util.Calendar.YEAR)
+                    val mes = (cal.get(java.util.Calendar.MONTH) + 1).toString().padStart(2, '0')
+                    gasto.fechaGasto.startsWith("$anyo-$mes")
+                }
+                "MES_ANTERIOR" -> {
+                    val cal = java.util.Calendar.getInstance()
+                    cal.add(java.util.Calendar.MONTH, -1)
+                    val anyo = cal.get(java.util.Calendar.YEAR)
+                    val mes = (cal.get(java.util.Calendar.MONTH) + 1).toString().padStart(2, '0')
+                    gasto.fechaGasto.startsWith("$anyo-$mes")
+                }
+                else -> true
+            }
+        }
+        .filter { gasto ->
+            filtroCategoria == "TODAS" || gasto.nombreCategoria == filtroCategoria
+        }
+        .sortedWith(
+            when (filtroOrden) {
+                "IMPORTE_DESC" -> compareByDescending { it.cantidadTotal }
+                "IMPORTE_ASC" -> compareBy { it.cantidadTotal }
+                else -> compareByDescending { it.fechaGasto }
+            }
+        )
+
+    val categorias = gastos.map { it.nombreCategoria }.distinct().sorted()
 
     Scaffold(
         topBar = {
@@ -172,10 +244,7 @@ fun PantallaDashboard(
         ) {
             item {
                 val context = LocalContext.current
-                Button(
-                    onClick = onAddExpenseClick,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Button(onClick = onAddExpenseClick, modifier = Modifier.fillMaxWidth()) {
                     Text("+ Añadir gasto")
                 }
                 Button(
@@ -190,6 +259,50 @@ fun PantallaDashboard(
                 }
             }
 
+            item {
+                Button(
+                    onClick = { mostrarFiltros = !mostrarFiltros },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(if (mostrarFiltros) "Ocultar filtros" else "🔍 Filtros")
+                }
+
+                if (mostrarFiltros) {
+                    Column(modifier = Modifier.padding(top = 8.dp)) {
+                        Text("Estado:", style = MaterialTheme.typography.labelMedium)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("TODOS" to "Todos", "PENDIENTE" to "Pendiente", "SALDADO" to "Saldado").forEach { (valor, etiqueta) ->
+                                FilterChip(selected = filtroEstado == valor, onClick = { filtroEstado = valor }, label = { Text(etiqueta) })
+                            }
+                        }
+
+                        Text("Fecha:", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("TODOS" to "Todos", "ESTE_MES" to "Este mes", "MES_ANTERIOR" to "Mes anterior").forEach { (valor, etiqueta) ->
+                                FilterChip(selected = filtroFecha == valor, onClick = { filtroFecha = valor }, label = { Text(etiqueta) })
+                            }
+                        }
+
+                        Text("Ordenar:", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf("FECHA_DESC" to "Más reciente", "IMPORTE_DESC" to "Mayor importe", "IMPORTE_ASC" to "Menor importe").forEach { (valor, etiqueta) ->
+                                FilterChip(selected = filtroOrden == valor, onClick = { filtroOrden = valor }, label = { Text(etiqueta) })
+                            }
+                        }
+
+                        if (categorias.isNotEmpty()) {
+                            Text("Categoría:", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 8.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(selected = filtroCategoria == "TODAS", onClick = { filtroCategoria = "TODAS" }, label = { Text("Todas") })
+                                categorias.forEach { categoria ->
+                                    FilterChip(selected = filtroCategoria == categoria, onClick = { filtroCategoria = categoria }, label = { Text(categoria) })
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             if (gastos.isEmpty()) {
                 item {
                     Text(
@@ -200,25 +313,52 @@ fun PantallaDashboard(
                 }
             } else {
                 item {
+                    val rolActual = balance?.rolUsuario ?: "USUARIO_1"
                     val totalPendiente = gastos
                         .filter { it.esPendiente }
-                        .sumOf { it.cantidadTotal }
+                        .sumOf { gasto ->
+                            val yoPague = if (rolActual == "USUARIO_1") gasto.pagadoUsuario1 else gasto.pagadoUsuario2
+                            if (!yoPague) {
+                                if (rolActual == "USUARIO_1") gasto.importeUsuario1 ?: 0.0
+                                else gasto.importeUsuario2 ?: 0.0
+                            } else 0.0
+                        }
                     Text(
-                        text = "Total pendiente: ${"%.2f".format(totalPendiente)}€",
+                        text = "Tu parte pendiente: ${"%.2f".format(totalPendiente)}€",
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(top = 8.dp)
                     )
+                    balance?.let {
+                        Card(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = when {
+                                    it.diferencia > 0 -> MaterialTheme.colorScheme.errorContainer
+                                    it.diferencia < 0 -> MaterialTheme.colorScheme.primaryContainer
+                                    else -> MaterialTheme.colorScheme.secondaryContainer
+                                }
+                            )
+                        ) {
+                            Text(text = it.mensaje, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(16.dp))
+                        }
+                    }
                 }
 
-                items(gastos) { gasto ->
+                items(gastosFiltrados) { gasto ->
                     GastoCard(
                         gasto = gasto,
+                        rolUsuario = balance?.rolUsuario ?: "USUARIO_1",
                         onSaldar = { idGasto ->
                             coroutineScope.launch {
-                                withContext(Dispatchers.IO) {
-                                    service.saldarDeuda(idGasto)
-                                }
-                                recargar
+                                withContext(Dispatchers.IO) { service.saldarDeuda(idGasto) }
+                                recargarInterno++
+                            }
+                        },
+                        onEditar = { gastoAEditar -> gastoEditando = gastoAEditar },
+                        onEliminar = { idGasto ->
+                            coroutineScope.launch {
+                                withContext(Dispatchers.IO) { service.eliminarGasto(idGasto) }
+                                recargarInterno++
                             }
                         }
                     )
@@ -227,9 +367,14 @@ fun PantallaDashboard(
         }
     }
 }
-
 @Composable
-fun GastoCard(gasto: Gasto, onSaldar: (Int) -> Unit) {
+fun GastoCard(
+    gasto: Gasto,
+    rolUsuario: String,
+    onSaldar: (Int) -> Unit,
+    onEditar: (Gasto) -> Unit,
+    onEliminar: (Int) -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -281,13 +426,32 @@ fun GastoCard(gasto: Gasto, onSaldar: (Int) -> Unit) {
                 )
             }
 
-            Text(
-                text = if (gasto.esPendiente) "⏳ Pendiente" else "✅ Saldado",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+// Determinar si yo ya pagué y si el otro ya pagó
+            val yoPague = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario1 else gasto.pagadoUsuario2
+            val otroPago = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario2 else gasto.pagadoUsuario1
 
+// Mostrar estado de pago de cada usuario
             if (gasto.esPendiente) {
+                Text(
+                    text = if (yoPague) "✅ Tú ya pagaste tu parte" else "⏳ Tú aún no has pagado",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                Text(
+                    text = if (otroPago) "✅ Tu pareja ya pagó su parte" else "⏳ Tu pareja aún no ha pagado",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
+            } else {
+                Text(
+                    text = "✅ Saldado",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+// Solo mostrar el botón de saldar si el gasto sigue pendiente Y yo no he pagado aún
+            if (gasto.esPendiente && !yoPague) {
                 Button(
                     onClick = { onSaldar(gasto.idGasto) },
                     modifier = Modifier
@@ -297,6 +461,84 @@ fun GastoCard(gasto: Gasto, onSaldar: (Int) -> Unit) {
                     Text("Marcar mi parte como pagada")
                 }
             }
+
+            // Botones de editar y eliminar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { onEditar(gasto) },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Editar")
+                }
+                Button(
+                    onClick = { onEliminar(gasto.idGasto) },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Eliminar")
+                }
+            }
         }
     }
+
 }
+@Composable
+fun EditarGastoDialog(
+    gasto: Gasto,
+    onConfirmar: (String, Double, String) -> Unit,
+    onCancelar: () -> Unit
+) {
+    var titulo by remember { mutableStateOf(gasto.tituloGasto) }
+    var cantidad by remember { mutableStateOf(gasto.cantidadTotal.toString()) }
+    var comentario by remember { mutableStateOf(gasto.comentario) }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onCancelar,
+        title = { Text("Editar gasto") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = titulo,
+                    onValueChange = { titulo = it },
+                    label = { Text("Título") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = cantidad,
+                    onValueChange = { cantidad = it },
+                    label = { Text("Cantidad (€)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = comentario,
+                    onValueChange = { comentario = it },
+                    label = { Text("Comentario") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val cantidadDouble = cantidad.toDoubleOrNull()
+                if (titulo.isNotBlank() && cantidadDouble != null && cantidadDouble > 0) {
+                    onConfirmar(titulo, cantidadDouble, comentario)
+                }
+            }) {
+                Text("Guardar")
+            }
+        },
+        dismissButton = {
+            Button(onClick = onCancelar) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
+

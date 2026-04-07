@@ -24,6 +24,17 @@ data class LoginRequest(val email: String, val password: String)
 // Lo que enviamos al servidor para registrarse
 @Serializable
 data class RegisterRequest(val nombre: String, val email: String, val password: String)
+
+// Data class para editar un gasto — evita el problema de tipos mixtos en el Map
+@Serializable
+data class EditarGastoRequest(
+    val idGasto: Int,
+    val tituloGasto: String,
+    val cantidadTotal: Double,
+    val comentario: String = "",
+    val idCategoria: Int = 1
+)
+
 // Datos que enviamos al servidor para guardar un gasto
 @Serializable
 data class GuardarGastoRequest(
@@ -258,6 +269,18 @@ class AllTogetherService {
         val comentario: String = ""
     )
 
+    // Respuesta del servidor con el balance entre los dos usuarios de la pareja
+    @Serializable
+    data class Balance(
+        val miDeuda: Double,
+        val deudaOtro: Double,
+        val diferencia: Double,
+        val nombreYo: String,
+        val nombreOtro: String,
+        val mensaje: String,
+        val rolUsuario: String
+    )
+
     // Crea una plantilla de gasto recurrente en la RDS
 // AWS EventBridge se encargará de generar el gasto automáticamente cada vez que toque
     suspend fun crearGastoRecurrente(
@@ -303,6 +326,70 @@ class AllTogetherService {
                 Result.success("Token FCM guardado correctamente")
             } else {
                 Result.failure(Exception("Error al guardar el token FCM"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    // Actualiza el título, cantidad y comentario de un gasto existente
+// El modo de reparto no cambia — solo se recalculan los importes con la nueva cantidad
+    suspend fun editarGasto(
+        idGasto: Int,
+        tituloGasto: String,
+        cantidadTotal: Double,
+        comentario: String = "",
+        idCategoria: Int = 1
+    ): Result<String> {
+        return try {
+            android.util.Log.d("EDITAR_GASTO", "Editando gasto $idGasto: $tituloGasto, $cantidadTotal")
+            val response = ApiClient.http.put("${ApiClient.BASE_URL}/gastos") {
+                contentType(ContentType.Application.Json)
+                setBody(EditarGastoRequest(
+                    idGasto = idGasto,
+                    tituloGasto = tituloGasto,
+                    cantidadTotal = cantidadTotal,
+                    comentario = comentario,
+                    idCategoria = idCategoria
+                ))
+            }
+            android.util.Log.d("EDITAR_GASTO", "Respuesta: ${response.status.value}")
+            if (response.status.value in 200..299) {
+                Result.success("Gasto actualizado correctamente")
+            } else {
+                Result.failure(Exception("Error al actualizar el gasto"))
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("EDITAR_GASTO", "Error: ${e.message}")
+            Result.failure(e)
+        }
+    }
+    // Elimina un gasto de la RDS
+// Solo puede eliminar gastos de parejas a las que pertenece el usuario
+    suspend fun eliminarGasto(idGasto: Int): Result<String> {
+        return try {
+            val response = ApiClient.http.delete("${ApiClient.BASE_URL}/gastos") {
+                parameter("idGasto", idGasto)
+            }
+            if (response.status.value in 200..299) {
+                Result.success("Gasto eliminado correctamente")
+            } else {
+                Result.failure(Exception("Error al eliminar el gasto"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    // Obtiene el balance entre los dos usuarios de una pareja
+// Devuelve quién le debe a quién y cuánto
+    suspend fun getBalance(idPareja: Int): Result<Balance> {
+        return try {
+            val response = ApiClient.http.get("${ApiClient.BASE_URL}/balance") {
+                parameter("idPareja", idPareja)
+            }
+            if (response.status.value in 200..299) {
+                Result.success(response.body<Balance>())
+            } else {
+                Result.failure(Exception("Error al obtener el balance"))
             }
         } catch (e: Exception) {
             Result.failure(e)
