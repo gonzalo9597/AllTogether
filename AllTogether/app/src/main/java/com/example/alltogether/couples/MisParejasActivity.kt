@@ -8,19 +8,25 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,7 +38,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
@@ -46,6 +56,7 @@ import com.example.alltogether.util.ParejaPreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
 
 class MisParejasActivity : ComponentActivity() {
 
@@ -126,6 +137,10 @@ data class ParejaVisual(
     val iconoResId: Int
 )
 
+private val FondoPantalla = Color(0xFFEBD999)
+private val VerdePrincipal = Color(0xFF2DBC94)
+private val VerdeSuave = Color(0xFFA6E6DB)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaMisParejas(
@@ -137,41 +152,72 @@ fun PantallaMisParejas(
     val titulo = if (parejas.size == 1) "Mi pareja" else "Mis parejas"
 
     Scaffold(
+        containerColor = FondoPantalla,
         topBar = {
             CenterAlignedTopAppBar(
+                navigationIcon = {
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "Logo AllTogether",
+                        modifier = Modifier
+                            .padding(start = 12.dp)
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                    )
+                },
                 title = {
                     Text(
                         text = "AllTogether",
-                        style = MaterialTheme.typography.headlineSmall
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = FontFamily.Serif,
+                        color = Color(0xFF1F1F1F)
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                    containerColor = VerdeSuave
                 ),
                 actions = {
                     IconButton(onClick = onOpenSettings) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ajustes),
+                        Icon(
+                            imageVector = Icons.Filled.Settings,
                             contentDescription = "Ajustes",
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(30.dp),
+                            tint = Color(0xFF1F1F1F)
                         )
                     }
                 }
             )
+        },
+        bottomBar = {
+            PieInicio()
         }
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(start = 16.dp, end = 16.dp, top = 34.dp, bottom = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(34.dp)
         ) {
             item {
-                Text(
-                    text = titulo,
-                    style = MaterialTheme.typography.headlineSmall
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = VerdeSuave
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                ) {
+                    Text(
+                        text = titulo,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F1F1F),
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)
+                    )
+                }
             }
 
             items(parejas) { pareja ->
@@ -192,13 +238,17 @@ fun PantallaMisParejas(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onOpenAddCouple() },
+                    shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer
-                    )
+                        containerColor = VerdeSuave
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                 ) {
                     Text(
                         text = "+ Añadir pareja",
                         fontSize = 22.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF1F1F1F),
                         modifier = Modifier.padding(20.dp)
                     )
                 }
@@ -217,9 +267,11 @@ fun ParejaCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+            containerColor = VerdePrincipal
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
             modifier = Modifier
@@ -237,8 +289,37 @@ fun ParejaCard(
 
             Text(
                 text = nombrePareja,
-                fontSize = 22.sp
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
         }
+    }
+}
+
+@Composable
+fun PieInicio() {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(top = 8.dp, bottom = 34.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "Proyecto Intermodular de DAM · AllTogether",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Black
+        )
+        Text(
+            text = "Sergio Malón, Sergio Sanz, Gonzalo Sebastián · v1.0.0",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.Black
+        )
+        Text(
+            text = "2025-2026",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.Black
+        )
     }
 }
