@@ -6,8 +6,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,8 +21,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -137,7 +141,7 @@ data class ParejaVisual(
     val iconoResId: Int
 )
 
-private val FondoPantalla = Color(0xFFEBD999)
+private val FondoPantalla = Color.Black
 private val VerdePrincipal = Color(0xFF2DBC94)
 private val VerdeSuave = Color(0xFFA6E6DB)
 
@@ -160,31 +164,31 @@ fun PantallaMisParejas(
                         painter = painterResource(id = R.drawable.logo),
                         contentDescription = "Logo AllTogether",
                         modifier = Modifier
-                            .padding(start = 12.dp)
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(20.dp))
+                            .padding(start = 16.dp)
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(18.dp))
                     )
                 },
                 title = {
                     Text(
                         text = "AllTogether",
                         style = MaterialTheme.typography.headlineSmall,
-                        fontSize = 28.sp,
+                        fontSize = 26.sp,
                         fontWeight = FontWeight.ExtraBold,
                         fontFamily = FontFamily.Serif,
-                        color = Color(0xFF1F1F1F)
+                        color = Color.White
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = VerdeSuave
+                    containerColor = VerdePrincipal
                 ),
                 actions = {
                     IconButton(onClick = onOpenSettings) {
                         Icon(
                             imageVector = Icons.Filled.Settings,
                             contentDescription = "Ajustes",
-                            modifier = Modifier.size(30.dp),
-                            tint = Color(0xFF1F1F1F)
+                            modifier = Modifier.size(26.dp),
+                            tint = Color.White
                         )
                     }
                 }
@@ -197,8 +201,10 @@ fun PantallaMisParejas(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .background(FondoPantalla)
                 .padding(innerPadding)
                 .padding(start = 16.dp, end = 16.dp, top = 34.dp, bottom = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(34.dp)
         ) {
             item {
@@ -234,24 +240,9 @@ fun PantallaMisParejas(
             }
 
             item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpenAddCouple() },
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = VerdeSuave
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-                ) {
-                    Text(
-                        text = "+ Añadir pareja",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF1F1F1F),
-                        modifier = Modifier.padding(20.dp)
-                    )
-                }
+                BotonAnadirPareja(
+                    onClick = onOpenAddCouple
+                )
             }
         }
     }
@@ -298,6 +289,51 @@ fun ParejaCard(
 }
 
 @Composable
+fun BotonAnadirPareja(
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .clickable { onClick() }
+            .padding(vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(62.dp)
+                .clip(CircleShape)
+                .background(VerdeSuave),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = "Añadir pareja",
+                tint = VerdePrincipal,
+                modifier = Modifier.size(28.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.size(10.dp))
+
+        Card(
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = VerdeSuave
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Text(
+                text = "Añadir pareja",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.Black,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
 fun PieInicio() {
     Column(
         modifier = Modifier
@@ -309,17 +345,17 @@ fun PieInicio() {
         Text(
             text = "Proyecto Intermodular de DAM · AllTogether",
             style = MaterialTheme.typography.bodySmall,
-            color = Color.Black
+            color = Color.White
         )
         Text(
             text = "Sergio Malón, Sergio Sanz, Gonzalo Sebastián · v1.0.0",
             style = MaterialTheme.typography.labelSmall,
-            color = Color.Black
+            color = Color.White
         )
         Text(
             text = "2025-2026",
             style = MaterialTheme.typography.labelSmall,
-            color = Color.Black
+            color = Color.White
         )
     }
 }
