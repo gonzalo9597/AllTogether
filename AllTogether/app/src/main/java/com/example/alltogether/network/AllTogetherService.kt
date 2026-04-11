@@ -21,6 +21,12 @@ data class LoginResponse(
 @Serializable
 data class LoginRequest(val email: String, val password: String)
 
+@Serializable
+data class SaldarDeudaRequest(
+    val idGasto: Int,
+    val rolPagado: String? = null
+)
+
 // Lo que enviamos al servidor para registrarse
 @Serializable
 data class RegisterRequest(val nombre: String, val email: String, val password: String)
@@ -35,6 +41,12 @@ data class EditarGastoRequest(
     val idCategoria: Int = 1
 )
 
+@Serializable
+data class SaldarDeudaGlobalRequest(
+    val idPareja: Int,
+    val rolDeudor: String
+)
+
 // Datos que enviamos al servidor para guardar un gasto
 @Serializable
 data class GuardarGastoRequest(
@@ -43,6 +55,8 @@ data class GuardarGastoRequest(
     val cantidadTotal: Double,
     val modoReparto: String = "MITAD",
     val comentario: String = "",
+    val fechaGasto: String = "",
+    val pagadoPor: String = "",
     val idCategoria: Int = 1,
     val porcentajeUsuario1: Double? = null,
     val porcentajeUsuario2: Double? = null,
@@ -165,6 +179,8 @@ class AllTogetherService {
         cantidadTotal: Double,
         modoReparto: String = "MITAD",
         comentario: String = "",
+        fechaGasto: String = "",
+        pagadoPor: String = "",
         idCategoria: Int = 1,
         porcentajeUsuario1: Double? = null,
         porcentajeUsuario2: Double? = null,
@@ -174,19 +190,24 @@ class AllTogetherService {
         return try {
             val response = ApiClient.http.post("${ApiClient.BASE_URL}/gastos") {
                 contentType(ContentType.Application.Json)
-                setBody(GuardarGastoRequest(
-                    idPareja = idPareja,
-                    tituloGasto = tituloGasto,
-                    cantidadTotal = cantidadTotal,
-                    modoReparto = modoReparto,
-                    comentario = comentario,
-                    idCategoria = idCategoria,
-                    porcentajeUsuario1 = porcentajeUsuario1,
-                    porcentajeUsuario2 = porcentajeUsuario2,
-                    importeUsuario1 = importeUsuario1,
-                    importeUsuario2 = importeUsuario2
-                ))
+                setBody(
+                    GuardarGastoRequest(
+                        idPareja = idPareja,
+                        tituloGasto = tituloGasto,
+                        cantidadTotal = cantidadTotal,
+                        modoReparto = modoReparto,
+                        comentario = comentario,
+                        fechaGasto = fechaGasto,
+                        pagadoPor = pagadoPor,
+                        idCategoria = idCategoria,
+                        porcentajeUsuario1 = porcentajeUsuario1,
+                        porcentajeUsuario2 = porcentajeUsuario2,
+                        importeUsuario1 = importeUsuario1,
+                        importeUsuario2 = importeUsuario2
+                    )
+                )
             }
+
             if (response.status.value in 200..299) {
                 Result.success(response.body<GastoResponse>())
             } else {
@@ -209,18 +230,25 @@ class AllTogetherService {
     }
     // Marca la parte del usuario autenticado como pagada en un gasto
 // Si ambos usuarios pagan, el gasto se marca automáticamente como no pendiente
-    suspend fun saldarDeuda(idGasto: Int): Result<String> {
+    suspend fun saldarDeuda(idGasto: Int, rolPagado: String? = null): Result<String> {
         return try {
             val response = ApiClient.http.post("${ApiClient.BASE_URL}/gastos/saldar") {
                 contentType(ContentType.Application.Json)
-                setBody(mapOf("idGasto" to idGasto))
+                setBody(
+                    SaldarDeudaRequest(
+                        idGasto = idGasto,
+                        rolPagado = rolPagado
+                    )
+                )
             }
+
             if (response.status.value in 200..299) {
                 Result.success("Pago registrado correctamente")
             } else {
                 Result.failure(Exception("Error al registrar el pago"))
             }
         } catch (e: Exception) {
+            android.util.Log.e("SALDAR_DEUDA", "Error: ${e.message}")
             Result.failure(e)
         }
     }
@@ -390,6 +418,31 @@ class AllTogetherService {
                 Result.success(response.body<Balance>())
             } else {
                 Result.failure(Exception("Error al obtener el balance"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun saldarDeudaGlobal(
+        idPareja: Int,
+        rolDeudor: String
+    ): Result<String> {
+        return try {
+            val response = ApiClient.http.post("${ApiClient.BASE_URL}/gastos/saldar") {
+                contentType(ContentType.Application.Json)
+                setBody(
+                    SaldarDeudaGlobalRequest(
+                        idPareja = idPareja,
+                        rolDeudor = rolDeudor
+                    )
+                )
+            }
+
+            if (response.status.value in 200..299) {
+                Result.success("Deuda saldada correctamente")
+            } else {
+                Result.failure(Exception("Error al saldar la deuda global"))
             }
         } catch (e: Exception) {
             Result.failure(e)
