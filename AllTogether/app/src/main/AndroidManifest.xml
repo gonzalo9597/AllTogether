@@ -25,6 +25,7 @@
         <activity android:name=".selectoricono.SelectorIconoParejaActivity" />
         <activity android:name=".couplesettings.CoupleSettingsActivity" />
         <activity android:name=".addexpense.AddRecurringExpenseActivity" />
+        <activity android:name=".editarGasto.ExpenseDetailActivity" />
         <service
             android:name=".MyFirebaseMessagingService"
             android:exported="false">

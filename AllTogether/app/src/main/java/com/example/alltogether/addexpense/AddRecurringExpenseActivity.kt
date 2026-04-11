@@ -20,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -60,13 +61,41 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
     var mensaje by remember { mutableStateOf("") }
     var cargando by remember { mutableStateOf(false) }
 
+    // Categorías recurrentes (fijas)
+    val categorias = listOf(
+        5 to "Alquiler",
+        6 to "Suministros",
+        7 to "Suscripciones"
+    )
+    var idCategoriaSeleccionada by remember { mutableIntStateOf(5) }
+    var expandidoCategoria by remember { mutableStateOf(false) }
+
     // Selector de frecuencia
     val frecuencias = listOf("DIARIO", "SEMANAL", "MENSUAL", "ANUAL")
     var frecuenciaSeleccionada by remember { mutableStateOf("MENSUAL") }
-    var expandido by remember { mutableStateOf(false) }
+    var expandidoFrecuencia by remember { mutableStateOf(false) }
 
     // Día del mes para gastos mensuales
     var diaDelMes by remember { mutableStateOf("1") }
+
+    // Día de la semana para gastos semanales
+    val diasSemana = listOf(
+        1 to "Lunes",
+        2 to "Martes",
+        3 to "Miércoles",
+        4 to "Jueves",
+        5 to "Viernes",
+        6 to "Sábado",
+        7 to "Domingo"
+    )
+    var diaSemanaSeleccionado by remember { mutableIntStateOf(1) }
+    var expandidoDiaSemana by remember { mutableStateOf(false) }
+
+    val nombreCategoriaSeleccionada =
+        categorias.firstOrNull { it.first == idCategoriaSeleccionada }?.second ?: "Alquiler"
+
+    val nombreDiaSemanaSeleccionado =
+        diasSemana.firstOrNull { it.first == diaSemanaSeleccionado }?.second ?: "Lunes"
 
     Scaffold(
         topBar = {
@@ -98,10 +127,46 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                     .padding(top = 8.dp)
             )
 
+            // Selector de categoría con el mismo formato visual que frecuencia
+            ExposedDropdownMenuBox(
+                expanded = expandidoCategoria,
+                onExpandedChange = { expandidoCategoria = !expandidoCategoria },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                OutlinedTextField(
+                    value = nombreCategoriaSeleccionada,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Categoría") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoCategoria)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor()
+                )
+                ExposedDropdownMenu(
+                    expanded = expandidoCategoria,
+                    onDismissRequest = { expandidoCategoria = false }
+                ) {
+                    categorias.forEach { (idCategoria, nombreCategoria) ->
+                        DropdownMenuItem(
+                            text = { Text(nombreCategoria) },
+                            onClick = {
+                                idCategoriaSeleccionada = idCategoria
+                                expandidoCategoria = false
+                            }
+                        )
+                    }
+                }
+            }
+
             // Selector de frecuencia con dropdown
             ExposedDropdownMenuBox(
-                expanded = expandido,
-                onExpandedChange = { expandido = !expandido },
+                expanded = expandidoFrecuencia,
+                onExpandedChange = { expandidoFrecuencia = !expandidoFrecuencia },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
@@ -111,21 +176,23 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Frecuencia") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandido) },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoFrecuencia)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .menuAnchor()
                 )
                 ExposedDropdownMenu(
-                    expanded = expandido,
-                    onDismissRequest = { expandido = false }
+                    expanded = expandidoFrecuencia,
+                    onDismissRequest = { expandidoFrecuencia = false }
                 ) {
                     frecuencias.forEach { frecuencia ->
                         DropdownMenuItem(
                             text = { Text(frecuencia) },
                             onClick = {
                                 frecuenciaSeleccionada = frecuencia
-                                expandido = false
+                                expandidoFrecuencia = false
                             }
                         )
                     }
@@ -144,6 +211,44 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                 )
             }
 
+            // Mostrar selector de día de la semana si es semanal
+            if (frecuenciaSeleccionada == "SEMANAL") {
+                ExposedDropdownMenuBox(
+                    expanded = expandidoDiaSemana,
+                    onExpandedChange = { expandidoDiaSemana = !expandidoDiaSemana },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = nombreDiaSemanaSeleccionado,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Día de la semana") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandidoDiaSemana)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandidoDiaSemana,
+                        onDismissRequest = { expandidoDiaSemana = false }
+                    ) {
+                        diasSemana.forEach { (numeroDia, nombreDia) ->
+                            DropdownMenuItem(
+                                text = { Text(nombreDia) },
+                                onClick = {
+                                    diaSemanaSeleccionado = numeroDia
+                                    expandidoDiaSemana = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
             OutlinedTextField(
                 value = comentario,
                 onValueChange = { comentario = it },
@@ -156,17 +261,33 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
             Button(
                 onClick = {
                     val cantidadDouble = cantidad.toDoubleOrNull()
+
                     if (titulo.isBlank()) {
                         mensaje = "Introduce un título"
                         return@Button
                     }
+
                     if (cantidadDouble == null || cantidadDouble <= 0) {
                         mensaje = "Introduce una cantidad válida"
                         return@Button
                     }
 
+                    if (frecuenciaSeleccionada == "MENSUAL") {
+                        val dia = diaDelMes.toIntOrNull()
+                        if (dia == null || dia !in 1..28) {
+                            mensaje = "El día del mes debe estar entre 1 y 28"
+                            return@Button
+                        }
+                    }
+
                     cargando = true
                     mensaje = ""
+
+                    val valorDia = when (frecuenciaSeleccionada) {
+                        "MENSUAL" -> diaDelMes.toIntOrNull() ?: 1
+                        "SEMANAL" -> diaSemanaSeleccionado
+                        else -> 1
+                    }
 
                     coroutineScope.launch {
                         val resultado = withContext(Dispatchers.IO) {
@@ -175,7 +296,8 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                                 tituloGasto = titulo,
                                 cantidadTotal = cantidadDouble,
                                 frecuencia = frecuenciaSeleccionada,
-                                diaDelMes = diaDelMes.toIntOrNull() ?: 1,
+                                diaDelMes = valorDia,
+                                idCategoria = idCategoriaSeleccionada,
                                 comentario = comentario
                             )
                         }
@@ -185,7 +307,9 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                                 titulo = ""
                                 cantidad = ""
                                 comentario = ""
-                                // Volver atrás tras crear
+                                diaDelMes = "1"
+                                diaSemanaSeleccionado = 1
+                                idCategoriaSeleccionada = 5
                                 (context as ComponentActivity).finish()
                             }
                             .onFailure {

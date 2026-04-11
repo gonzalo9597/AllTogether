@@ -1,9 +1,8 @@
 package com.example.alltogether.model
 
 import kotlinx.serialization.Serializable
+import java.io.Serializable as JSerializable
 
-// Representa la respuesta del servidor al guardar un gasto
-// Contiene los importes calculados según el modo de reparto
 @Serializable
 data class GastoResponse(
     val idGasto: Int,
@@ -14,7 +13,6 @@ data class GastoResponse(
     val importeUsuario2: Double
 )
 
-// Representa un gasto completo — se usará cuando implementemos getGastos
 @Serializable
 data class Gasto(
     val idGasto: Int,
@@ -33,5 +31,6 @@ data class Gasto(
     val importeUsuario2: Double? = null,
     val pagadoUsuario1: Boolean,
     val pagadoUsuario2: Boolean,
-    val nombreCategoria: String = ""
-)
+    val nombreCategoria: String = "",
+    val tipoGasto: String = ""
+) : JSerializable
