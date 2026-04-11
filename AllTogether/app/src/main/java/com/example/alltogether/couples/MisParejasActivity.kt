@@ -45,7 +45,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -159,35 +158,26 @@ fun PantallaMisParejas(
         containerColor = FondoPantalla,
         topBar = {
             CenterAlignedTopAppBar(
-                navigationIcon = {
+                title = {
                     Image(
                         painter = painterResource(id = R.drawable.logo),
                         contentDescription = "Logo AllTogether",
                         modifier = Modifier
-                            .padding(start = 16.dp)
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(18.dp))
-                    )
-                },
-                title = {
-                    Text(
-                        text = "AllTogether",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFamily = FontFamily.Serif,
-                        color = Color.White
+                            .size(width = 210.dp, height = 74.dp)
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = VerdePrincipal
                 ),
                 actions = {
-                    IconButton(onClick = onOpenSettings) {
+                    IconButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Settings,
                             contentDescription = "Ajustes",
-                            modifier = Modifier.size(26.dp),
+                            modifier = Modifier.size(28.dp),
                             tint = Color.White
                         )
                     }
