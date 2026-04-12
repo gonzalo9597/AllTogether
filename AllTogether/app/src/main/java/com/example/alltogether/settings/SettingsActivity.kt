@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import com.example.alltogether.login.LoginActivity
 import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.ui.theme.AllTogetherTheme
+import com.example.alltogether.util.CurrencyPreferencesManager
 import com.example.alltogether.util.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -90,7 +91,8 @@ fun PantallaSettings() {
     val service = remember { AllTogetherService() }
     val coroutineScope = rememberCoroutineScope()
 
-    var divisa by remember { mutableStateOf("EUR") }
+    val currencyManager = remember { CurrencyPreferencesManager(context) }
+    var divisa by remember { mutableStateOf(currencyManager.obtenerDivisa()) }
     var mostrarConfirmacionEliminar by remember { mutableStateOf(false) }
     var cargandoEliminar by remember { mutableStateOf(false) }
 
@@ -229,7 +231,15 @@ fun PantallaSettings() {
                     )
 
                     Button(
-                        onClick = { (context as ComponentActivity).finish() },
+                        onClick = {
+                            currencyManager.guardarDivisa(divisa)  // guarda local como antes
+                            coroutineScope.launch {
+                                withContext(Dispatchers.IO) {
+                                    service.actualizarDivisa(divisa)  // guarda en BD
+                                }
+                            }
+                            (context as ComponentActivity).finish()
+                        },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = VerdeSuave,
                             contentColor = Color.Black

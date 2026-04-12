@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.example.alltogether.TopAppBarWithBack
 import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.ui.theme.AllTogetherTheme
+import com.example.alltogether.util.CurrencyPreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -95,6 +96,8 @@ fun PantallaAddExpense(idPareja: Int) {
     // Fecha por defecto = hoy
     val calendario = remember { Calendar.getInstance() }
     var fechaGasto by remember { mutableStateOf(formatearFecha(calendario)) }
+    val currencyManager = remember { CurrencyPreferencesManager(context) }
+    val simboloDivisa = remember { currencyManager.obtenerSimbolo() }
 
     LaunchedEffect(idPareja) {
         val resultado = withContext(Dispatchers.IO) {
@@ -304,7 +307,7 @@ fun PantallaAddExpense(idPareja: Int) {
 
                         resultado
                             .onSuccess { gasto ->
-                                mensaje = "Gasto guardado — cada uno paga ${gasto.importeUsuario1}€"
+                                mensaje = "Gasto guardado — cada uno paga ${gasto.importeUsuario1}$simboloDivisa"
                                 titulo = ""
                                 cantidad = ""
                                 comentario = ""

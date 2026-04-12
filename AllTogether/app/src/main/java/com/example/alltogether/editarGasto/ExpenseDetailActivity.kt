@@ -31,6 +31,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.alltogether.TopAppBarWithBack
@@ -40,6 +41,7 @@ import com.example.alltogether.dashboard.VerdeSuave
 import com.example.alltogether.model.Gasto
 import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.ui.theme.AllTogetherTheme
+import com.example.alltogether.util.CurrencyPreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -95,6 +97,9 @@ fun PantallaDetalleGasto(
 
     val yoPague = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario1 else gasto.pagadoUsuario2
     val otroPago = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario2 else gasto.pagadoUsuario1
+    val context = LocalContext.current
+    val currencyManager = remember { CurrencyPreferencesManager(context) }
+    val simboloDivisa = remember { currencyManager.obtenerSimbolo() }
     val rolOtro = if (rolUsuario == "USUARIO_1") "USUARIO_2" else "USUARIO_1"
 
     if (mostrarEditar) {
@@ -154,7 +159,7 @@ fun PantallaDetalleGasto(
                     )
 
                     Text(
-                        text = "${"%.2f".format(gasto.cantidadTotal)}€",
+                        text = "${"%.2f".format(currencyManager.convertir(gasto.cantidadTotal))}$simboloDivisa",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,
@@ -181,7 +186,7 @@ fun PantallaDetalleGasto(
 
                     if (gasto.importeUsuario1 != null && gasto.importeUsuario2 != null) {
                         Text(
-                            text = "Reparto: ${"%.2f".format(gasto.importeUsuario1)}€ / ${"%.2f".format(gasto.importeUsuario2)}€",
+                            text = "Reparto: ${"%.2f".format(gasto.importeUsuario1)}$simboloDivisa / ${"%.2f".format(gasto.importeUsuario2)}$simboloDivisa",
                             modifier = Modifier.padding(top = 4.dp),
                             color = Color.Black
                         )

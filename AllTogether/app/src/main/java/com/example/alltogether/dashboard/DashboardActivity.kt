@@ -53,6 +53,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.alltogether.addexpense.AddExpenseActivity
@@ -67,13 +68,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.text.style.TextAlign
+import com.example.alltogether.util.CurrencyPreferencesManager
 
 val FondoPantalla = Color.Black
 val VerdePrincipal = Color(0xFF2DBC94)
 val VerdeSuave = Color(0xFFA6E6DB)
 val RojoPeligro = Color(0xFFC62828)
-
+val AmarilloMedio = Color(0xFFF5A623)
+val RojoSuave = Color(0xFFE57373)
 class DashboardActivity : ComponentActivity() {
+
 
     private var idPareja: Int = -1
     private var nombreParejaOriginal: String = "Pareja"
@@ -230,7 +234,9 @@ fun PantallaDashboard(
 ) {
     val service = remember { AllTogetherService() }
     val coroutineScope = rememberCoroutineScope()
-
+    val context = LocalContext.current
+    val currencyManager = remember { CurrencyPreferencesManager(context) }
+    val simboloDivisa = remember { currencyManager.obtenerSimbolo() }
     var gastos by remember { mutableStateOf<List<Gasto>>(emptyList()) }
     var recargarInterno by remember { mutableStateOf(recargar) }
     var balance by remember { mutableStateOf<AllTogetherService.Balance?>(null) }
@@ -308,6 +314,8 @@ fun PantallaDashboard(
 
     val resumen = calcularResumenDashboard(gastos, rolActual)
     val deudaNeta = resumen.deudaYoAOtro - resumen.deudaOtroAMi
+
+
 
     Scaffold(
         containerColor = FondoPantalla,
@@ -565,9 +573,9 @@ fun PantallaDashboard(
 
                         if (kotlin.math.abs(deudaNeta) > 0.009) {
                             val mensajeDeuda = if (deudaNeta > 0) {
-                                "Le debes ${"%.2f".format(deudaNeta)}€ a $nombreOtro"
+                                "Le debes ${"%.2f".format(currencyManager.convertir(deudaNeta))}$simboloDivisa a $nombreOtro"
                             } else {
-                                "$nombreOtro te debe ${"%.2f".format(-deudaNeta)}€"
+                                "$nombreOtro te debe ${"%.2f".format(currencyManager.convertir(-deudaNeta))}$simboloDivisa"
                             }
 
                             val textoBotonGlobal = if (deudaNeta > 0) {
@@ -645,7 +653,7 @@ fun PantallaDashboard(
                                     )
 
                                     Text(
-                                        text = "Tu parte pendiente: ${"%.2f".format(resumen.pendienteGeneralYo)}€",
+                                        text = "Tu parte pendiente: ${"%.2f".format(resumen.pendienteGeneralYo)}$simboloDivisa",
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(top = 8.dp),
@@ -654,7 +662,7 @@ fun PantallaDashboard(
                                     )
 
                                     Text(
-                                        text = "$nombreOtro: ${"%.2f".format(resumen.pendienteGeneralOtro)}€",
+                                        text = "$nombreOtro: ${"%.2f".format(resumen.pendienteGeneralOtro)}$simboloDivisa",
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(top = 4.dp),
@@ -703,12 +711,17 @@ fun PantallaDashboard(
                             GastoFijoCard(
                                 gasto = gasto,
                                 rolUsuario = rolActual,
-                                onClick = { onOpenExpenseDetail(gasto, rolActual) }
+                                onClick = { onOpenExpenseDetail(gasto, rolActual)},
+                                simboloDivisa = simboloDivisa,
+                                currencyManager = currencyManager
                             )
                         } else {
                             GastoResumenCard(
                                 gasto = gasto,
-                                onClick = { onOpenExpenseDetail(gasto, rolActual) }
+                                onClick = { onOpenExpenseDetail(gasto, rolActual) },
+                                simboloDivisa = simboloDivisa,
+                                rolUsuario = rolActual,
+                                currencyManager = currencyManager
                             )
                         }
                     }
@@ -721,15 +734,19 @@ fun PantallaDashboard(
 @Composable
 fun GastoResumenCard(
     gasto: Gasto,
+    simboloDivisa: String,
+    rolUsuario: String,
+    currencyManager: CurrencyPreferencesManager,
     onClick: () -> Unit
 ) {
+    val colorTarjeta = colorTarjetaGasto(gasto, rolUsuario)
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = VerdePrincipal
+            containerColor = colorTarjeta
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -746,7 +763,7 @@ fun GastoResumenCard(
                 color = Color.White
             )
             Text(
-                text = "${"%.2f".format(gasto.cantidadTotal)}€",
+                text = "${"%.2f".format(currencyManager.convertir(gasto.cantidadTotal))}$simboloDivisa",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -759,18 +776,20 @@ fun GastoResumenCard(
 fun GastoFijoCard(
     gasto: Gasto,
     rolUsuario: String,
+    simboloDivisa: String,
+    currencyManager: CurrencyPreferencesManager,  // 👈 completar el tipo
     onClick: () -> Unit
 ) {
     val yoPague = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario1 else gasto.pagadoUsuario2
     val otroPago = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario2 else gasto.pagadoUsuario1
-
+    val colorTarjeta = colorTarjetaGasto(gasto, rolUsuario)
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = VerdePrincipal
+            containerColor = colorTarjeta
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -790,7 +809,7 @@ fun GastoFijoCard(
                     color = Color.White
                 )
                 Text(
-                    text = "${"%.2f".format(gasto.cantidadTotal)}€",
+                    text = "${"%.2f".format(currencyManager.convertir(gasto.cantidadTotal))}$simboloDivisa",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -806,7 +825,7 @@ fun GastoFijoCard(
 
             if (gasto.importeUsuario1 != null && gasto.importeUsuario2 != null) {
                 Text(
-                    text = "Reparto: ${"%.2f".format(gasto.importeUsuario1)}€ / ${"%.2f".format(gasto.importeUsuario2)}€",
+                    text = "Reparto: ${"%.2f".format(gasto.importeUsuario1)}$simboloDivisa / ${"%.2f".format(gasto.importeUsuario2)}$simboloDivisa",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White,
                     modifier = Modifier.padding(top = 4.dp)
@@ -845,4 +864,13 @@ fun GastoFijoCard(
             }
         }
     }
+}
+fun colorTarjetaGasto(gasto: Gasto, rolUsuario: String): Color {
+    if (!gasto.esPendiente) return VerdePrincipal  // ✅ Saldado — verde
+
+    val yoPague = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario1 else gasto.pagadoUsuario2
+    val otroPago = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario2 else gasto.pagadoUsuario1
+
+    return if (yoPague xor otroPago) AmarilloMedio  // 🟡 Medio pagado — amarillo
+    else RojoSuave                                   // 🔴 Nadie ha pagado — rojo
 }
