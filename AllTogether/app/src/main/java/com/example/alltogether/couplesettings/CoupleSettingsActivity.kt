@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ButtonDefaults
+import com.example.alltogether.couplesettings.RecurringExpensesActivity
 class CoupleSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -163,6 +164,25 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 4.dp)
                 )
+            }
+
+            Text(
+                text = "Gestión",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 24.dp)
+            )
+
+            Button(
+                onClick = {
+                    val intent = Intent(context, RecurringExpensesActivity::class.java)
+                    intent.putExtra("id_pareja", idPareja)
+                    context.startActivity(intent)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                Text("Gastos recurrentes")
             }
             // Sección para abandonar la pareja
             Text(

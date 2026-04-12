@@ -7,6 +7,7 @@ import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import com.example.alltogether.model.GastoResponse
 import com.example.alltogether.model.Gasto
+import com.example.alltogether.model.GastoRecurrente
 // Estructura de la respuesta que devuelve el servidor tras login/register
 // @Serializable permite que Ktor convierta automáticamente el JSON a este objeto
 @Serializable
@@ -15,6 +16,17 @@ data class LoginResponse(
     val idUsuario: Int,     // ID del usuario en la base de datos
     val nombre: String,     // Nombre del usuario
     val email: String       // Email del usuario
+)
+
+@Serializable
+data class EditarGastoRecurrenteRequest(
+    val idRecurrente: Int,
+    val tituloGasto: String,
+    val cantidadTotal: Double,
+    val frecuencia: String,
+    val diaDelMes: Int,
+    val idCategoria: Int,
+    val comentario: String = ""
 )
 
 // Lo que enviamos al servidor para hacer login
@@ -402,6 +414,51 @@ class AllTogetherService {
                 Result.success("Gasto eliminado correctamente")
             } else {
                 Result.failure(Exception("Error al eliminar el gasto"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getRecurrentes(idPareja: Int): List<GastoRecurrente> {
+        return try {
+            ApiClient.http.get("${ApiClient.BASE_URL}/recurrentes") {
+                parameter("idPareja", idPareja)
+            }.body()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    suspend fun editarGastoRecurrente(
+        idRecurrente: Int,
+        tituloGasto: String,
+        cantidadTotal: Double,
+        frecuencia: String,
+        diaDelMes: Int,
+        idCategoria: Int,
+        comentario: String = ""
+    ): Result<String> {
+        return try {
+            val response = ApiClient.http.put("${ApiClient.BASE_URL}/recurrentes") {
+                contentType(ContentType.Application.Json)
+                setBody(
+                    EditarGastoRecurrenteRequest(
+                        idRecurrente = idRecurrente,
+                        tituloGasto = tituloGasto,
+                        cantidadTotal = cantidadTotal,
+                        frecuencia = frecuencia,
+                        diaDelMes = diaDelMes,
+                        idCategoria = idCategoria,
+                        comentario = comentario
+                    )
+                )
+            }
+
+            if (response.status.value in 200..299) {
+                Result.success("Gasto recurrente actualizado correctamente")
+            } else {
+                Result.failure(Exception("Error al editar el gasto recurrente"))
             }
         } catch (e: Exception) {
             Result.failure(e)
