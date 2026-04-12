@@ -203,20 +203,6 @@ fun PantallaSettings() {
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
-
-                        Card(
-                            shape = RoundedCornerShape(8.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = VerdeSuave
-                            )
-                        ) {
-                            Text(
-                                text = "Config",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.Black,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
                     }
 
                     DropdownDivisaStyled(

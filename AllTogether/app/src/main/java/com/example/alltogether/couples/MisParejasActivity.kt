@@ -1,10 +1,12 @@
 package com.example.alltogether.couples
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,13 +40,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,13 +56,13 @@ import com.example.alltogether.R
 import com.example.alltogether.addcouple.AddCoupleActivity
 import com.example.alltogether.dashboard.DashboardActivity
 import com.example.alltogether.network.AllTogetherService
+import com.example.alltogether.selectoricono.SelectorIconoParejaActivity
 import com.example.alltogether.settings.SettingsActivity
 import com.example.alltogether.ui.theme.AllTogetherTheme
 import com.example.alltogether.util.ParejaPreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
 
 class MisParejasActivity : ComponentActivity() {
 
@@ -71,6 +74,20 @@ class MisParejasActivity : ComponentActivity() {
 
     // Lista que se pinta en pantalla
     private var parejasVisibles by mutableStateOf<List<ParejaVisual>>(emptyList())
+
+    private var idParejaSeleccionandoIcono by mutableIntStateOf(-1)
+
+    private val selectorIconoLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK && idParejaSeleccionandoIcono != -1) {
+                val nuevoNombreIcono =
+                    result.data?.getStringExtra("icono_nombre") ?: return@registerForActivityResult
+
+                parejaPrefs.guardarIconoPareja(idParejaSeleccionandoIcono, nuevoNombreIcono)
+                cargarParejas()
+                idParejaSeleccionandoIcono = -1
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,7 +105,8 @@ class MisParejasActivity : ComponentActivity() {
                     },
                     onOpenAddCouple = {
                         startActivity(Intent(this, AddCoupleActivity::class.java))
-                    }
+                    },
+                    onOpenIconSelector = ::abrirSelectorIcono
                 )
             }
         }
@@ -107,6 +125,12 @@ class MisParejasActivity : ComponentActivity() {
         intent.putExtra("id_pareja", idPareja)
         intent.putExtra("nombre_pareja", nombreParejaOriginal)
         startActivity(intent)
+    }
+
+    private fun abrirSelectorIcono(idPareja: Int) {
+        idParejaSeleccionandoIcono = idPareja
+        val intent = Intent(this, SelectorIconoParejaActivity::class.java)
+        selectorIconoLauncher.launch(intent)
     }
 
     private fun cargarParejas() {
@@ -150,7 +174,8 @@ fun PantallaMisParejas(
     parejas: List<ParejaVisual>,
     onOpenDashboard: (Int, String) -> Unit,
     onOpenSettings: () -> Unit,
-    onOpenAddCouple: () -> Unit
+    onOpenAddCouple: () -> Unit,
+    onOpenIconSelector: (Int) -> Unit
 ) {
     val titulo = if (parejas.size == 1) "Mi pareja" else "Mis parejas"
 
@@ -225,6 +250,9 @@ fun PantallaMisParejas(
                             pareja.idPareja,
                             pareja.nombreParejaOriginal
                         )
+                    },
+                    onIconClick = {
+                        onOpenIconSelector(pareja.idPareja)
                     }
                 )
             }
@@ -242,7 +270,8 @@ fun PantallaMisParejas(
 fun ParejaCard(
     nombrePareja: String,
     iconoResId: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onIconClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -260,11 +289,23 @@ fun ParejaCard(
                 .padding(18.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                painter = painterResource(id = iconoResId),
-                contentDescription = nombrePareja,
-                modifier = Modifier.size(60.dp)
-            )
+            Card(
+                modifier = Modifier
+                    .clickable { onIconClick() },
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = VerdeSuave
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = iconoResId),
+                    contentDescription = nombrePareja,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .padding(8.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.width(16.dp))
 

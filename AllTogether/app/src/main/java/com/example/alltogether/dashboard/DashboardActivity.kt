@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -67,6 +68,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.Alignment
 
 val FondoPantalla = Color.Black
 val VerdePrincipal = Color(0xFF2DBC94)
@@ -308,19 +310,37 @@ fun PantallaDashboard(
 
     val resumen = calcularResumenDashboard(gastos, rolActual)
     val deudaNeta = resumen.deudaYoAOtro - resumen.deudaOtroAMi
+    val estanAlDia = gastos.isNotEmpty() &&
+            kotlin.math.abs(deudaNeta) <= 0.009 &&
+            resumen.pendienteGeneralYo <= 0.009 &&
+            resumen.pendienteGeneralOtro <= 0.009
 
     Scaffold(
         containerColor = FondoPantalla,
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
-                    Text(
-                        text = nombrePareja,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
-                        color = Color.White
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = nombrePareja,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Serif,
+                            color = Color.White
+                        )
+
+                        if (estanAlDia) {
+                            Text(
+                                text = "¡Estáis al día! 🎉",
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
@@ -358,53 +378,61 @@ fun PantallaDashboard(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Button(
-                    onClick = onAddExpenseClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = VerdeSuave,
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = VerdePrincipal
-                    )
-                    Text(
-                        text = "  Añadir gasto",
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            item {
                 val context = androidx.compose.ui.platform.LocalContext.current
-                Button(
-                    onClick = {
-                        val intent = Intent(context, AddRecurringExpenseActivity::class.java)
-                        intent.putExtra("id_pareja", idPareja)
-                        context.startActivity(intent)
-                    },
+
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = VerdeSuave,
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = VerdePrincipal
-                    )
-                    Text(
-                        text = "  Gasto recurrente",
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Button(
+                        onClick = onAddExpenseClick,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = VerdeSuave,
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = VerdePrincipal
+                        )
+                        Text(
+                            text = "  Añadir gasto",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            val intent = Intent(context, AddRecurringExpenseActivity::class.java)
+                            intent.putExtra("id_pareja", idPareja)
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = VerdeSuave,
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = VerdePrincipal
+                        )
+                        Text(
+                            text = "  Gasto recurrente",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
 
@@ -662,27 +690,6 @@ fun PantallaDashboard(
                                         textAlign = TextAlign.Center
                                     )
                                 }
-                            }
-                        }
-
-                        if (kotlin.math.abs(deudaNeta) <= 0.009 &&
-                            resumen.pendienteGeneralYo <= 0.009 &&
-                            resumen.pendienteGeneralOtro <= 0.009
-                        ) {
-                            Card(
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(24.dp),
-                                colors = CardDefaults.cardColors(containerColor = VerdeSuave)
-                            ) {
-                                Text(
-                                    text = "¡Estáis al día! 🎉",
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(18.dp),
-                                    color = Color.Black,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center
-                                )
                             }
                         }
                     }
