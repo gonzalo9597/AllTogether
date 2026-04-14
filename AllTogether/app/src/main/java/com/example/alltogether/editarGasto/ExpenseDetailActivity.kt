@@ -105,6 +105,7 @@ fun PantallaDetalleGasto(
     if (mostrarEditar) {
         EditarGastoDialogDetalle(
             gasto = gasto,
+            simboloDivisa = simboloDivisa,
             onConfirmar = { titulo, cantidad, comentario ->
                 cargando = true
                 coroutineScope.launch {
@@ -186,8 +187,7 @@ fun PantallaDetalleGasto(
 
                     if (gasto.importeUsuario1 != null && gasto.importeUsuario2 != null) {
                         Text(
-                            text = "Reparto: ${"%.2f".format(gasto.importeUsuario1)}$simboloDivisa / ${"%.2f".format(gasto.importeUsuario2)}$simboloDivisa",
-                            modifier = Modifier.padding(top = 4.dp),
+                            text = "Reparto: ${"%.2f".format(currencyManager.convertir(gasto.importeUsuario1))}$simboloDivisa / ${"%.2f".format(currencyManager.convertir(gasto.importeUsuario2))}$simboloDivisa",                            modifier = Modifier.padding(top = 4.dp),
                             color = Color.Black
                         )
                     }
@@ -336,6 +336,7 @@ fun PantallaDetalleGasto(
 @Composable
 fun EditarGastoDialogDetalle(
     gasto: Gasto,
+    simboloDivisa: String,
     onConfirmar: (String, Double, String) -> Unit,
     onCancelar: () -> Unit
 ) {
@@ -374,7 +375,7 @@ fun EditarGastoDialogDetalle(
                 OutlinedTextField(
                     value = cantidad,
                     onValueChange = { cantidad = it },
-                    label = { Text("Cantidad (€)") },
+                    label = { Text("Cantidad ($simboloDivisa)") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(

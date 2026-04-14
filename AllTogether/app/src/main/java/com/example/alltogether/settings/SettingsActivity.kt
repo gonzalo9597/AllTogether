@@ -232,10 +232,10 @@ fun PantallaSettings() {
 
                     Button(
                         onClick = {
-                            currencyManager.guardarDivisa(divisa)  // guarda local como antes
+                            currencyManager.guardarDivisa(divisa)
                             coroutineScope.launch {
                                 withContext(Dispatchers.IO) {
-                                    service.actualizarDivisa(divisa)  // guarda en BD
+                                    service.actualizarDivisa(divisa)
                                 }
                             }
                             (context as ComponentActivity).finish()
