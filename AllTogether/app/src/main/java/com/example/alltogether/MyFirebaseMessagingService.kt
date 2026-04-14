@@ -1,5 +1,6 @@
 package com.example.alltogether
 
+import android.os.Build
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.example.alltogether.network.AllTogetherService
@@ -24,10 +25,33 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
-    // Se llama cuando llega una notificación mientras la app está en primer plano
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        // Por ahora solo logueamos — más adelante podemos mostrar una notificación
-        android.util.Log.d("FCM", "Notificación recibida: ${message.notification?.title}")
+
+        val title = message.notification?.title ?: message.data["title"] ?: "AllTogether"
+        val body = message.notification?.body ?: message.data["body"] ?: ""
+
+        val channelId = "alltogether_channel"
+        val notificationManager = getSystemService(android.app.NotificationManager::class.java)
+
+        // Crear el canal solo en Android 8+ (sin @RequiresApi)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = android.app.NotificationChannel(
+                channelId,
+                "AllTogether",
+                android.app.NotificationManager.IMPORTANCE_HIGH
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val notification = androidx.core.app.NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.corazon)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+
+        notificationManager.notify(System.currentTimeMillis().toInt(), notification)
     }
 }

@@ -505,4 +505,19 @@ class AllTogetherService {
             Result.failure(e)
         }
     }
+    suspend fun actualizarDivisa(divisa: String): Result<String> {
+        return try {
+            val response = ApiClient.http.put("${ApiClient.BASE_URL}/usuario/divisa") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("divisa" to divisa))
+            }
+            if (response.status.value in 200..299) {
+                Result.success("Divisa actualizada")
+            } else {
+                Result.failure(Exception("Error al actualizar la divisa"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
