@@ -1,10 +1,13 @@
 package com.example.alltogether.selectoricono
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,10 +20,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -42,12 +47,28 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.alltogether.R
 import com.example.alltogether.ui.theme.AllTogetherTheme
+import java.io.File
+import java.io.FileOutputStream
 
 private val FondoPantalla = Color.Black
 private val VerdePrincipal = Color(0xFF2DBC94)
 private val VerdeSuave = Color(0xFFA6E6DB)
 
 class SelectorIconoParejaActivity : ComponentActivity() {
+
+    private val pickMediaLauncher =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) {
+                val rutaGuardada = copiarImagenAAlmacenamientoInterno(uri)
+
+                if (rutaGuardada != null) {
+                    val intent = Intent()
+                    intent.putExtra("imagen_personalizada_path", rutaGuardada)
+                    setResult(RESULT_OK, intent)
+                    finish()
+                }
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +78,11 @@ class SelectorIconoParejaActivity : ComponentActivity() {
             AllTogetherTheme {
                 PantallaSelectorIconoPareja(
                     onBackClick = { finish() },
+                    onElegirFoto = {
+                        pickMediaLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
                     onIconoSeleccionado = { nombreIcono ->
                         val intent = Intent()
                         intent.putExtra("icono_nombre", nombreIcono)
@@ -67,12 +93,38 @@ class SelectorIconoParejaActivity : ComponentActivity() {
             }
         }
     }
+
+    private fun copiarImagenAAlmacenamientoInterno(uri: Uri): String? {
+        return try {
+            val carpeta = File(filesDir, "imagenes_pareja")
+            if (!carpeta.exists()) {
+                carpeta.mkdirs()
+            }
+
+            val archivoDestino = File(
+                carpeta,
+                "pareja_${System.currentTimeMillis()}.jpg"
+            )
+
+            contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(archivoDestino).use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            archivoDestino.absolutePath
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaSelectorIconoPareja(
     onBackClick: () -> Unit,
+    onElegirFoto: () -> Unit,
     onIconoSeleccionado: (String) -> Unit
 ) {
     Scaffold(
@@ -118,6 +170,10 @@ fun PantallaSelectorIconoPareja(
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
+            )
+
+            TarjetaFotoGaleria(
+                onClick = onElegirFoto
             )
 
             Row(
@@ -171,6 +227,46 @@ fun PantallaSelectorIconoPareja(
                     nombreIcono = "gato",
                     onIconoSeleccionado = onIconoSeleccionado,
                     modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TarjetaFotoGaleria(
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = VerdeSuave
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp)
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Filled.Photo,
+                    contentDescription = "Elegir foto",
+                    tint = VerdePrincipal,
+                    modifier = Modifier.size(52.dp)
+                )
+
+                Text(
+                    text = "Elegir foto del móvil",
+                    color = Color.Black,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
         }

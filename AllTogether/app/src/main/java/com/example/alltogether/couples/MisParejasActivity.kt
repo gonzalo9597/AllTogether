@@ -2,6 +2,7 @@ package com.example.alltogether.couples
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,8 +47,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,27 +66,32 @@ import com.example.alltogether.util.ParejaPreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 class MisParejasActivity : ComponentActivity() {
 
-    // Servicio que devuelve las parejas
     private val service = AllTogetherService()
-
-    // Preferencias para el nombre visible y el icono visible
     private lateinit var parejaPrefs: ParejaPreferencesManager
-
-    // Lista que se pinta en pantalla
     private var parejasVisibles by mutableStateOf<List<ParejaVisual>>(emptyList())
-
     private var idParejaSeleccionandoIcono by mutableIntStateOf(-1)
 
     private val selectorIconoLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK && idParejaSeleccionandoIcono != -1) {
-                val nuevoNombreIcono =
-                    result.data?.getStringExtra("icono_nombre") ?: return@registerForActivityResult
+                val nuevoNombreIcono = result.data?.getStringExtra("icono_nombre")
+                val nuevaRutaImagen = result.data?.getStringExtra("imagen_personalizada_path")
 
-                parejaPrefs.guardarIconoPareja(idParejaSeleccionandoIcono, nuevoNombreIcono)
+                if (nuevoNombreIcono != null) {
+                    parejaPrefs.guardarIconoPareja(idParejaSeleccionandoIcono, nuevoNombreIcono)
+                }
+
+                if (nuevaRutaImagen != null) {
+                    parejaPrefs.guardarImagenPersonalizadaPareja(
+                        idParejaSeleccionandoIcono,
+                        nuevaRutaImagen
+                    )
+                }
+
                 cargarParejas()
                 idParejaSeleccionandoIcono = -1
             }
@@ -116,7 +124,6 @@ class MisParejasActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Al volver a esta pantalla, recargamos por si ha habido cambios
         cargarParejas()
     }
 
@@ -135,12 +142,10 @@ class MisParejasActivity : ComponentActivity() {
 
     private fun cargarParejas() {
         lifecycleScope.launch {
-            // La llamada a internet la hacemos en segundo plano
             val parejasOriginales = withContext(Dispatchers.IO) {
                 service.getParejasUsuario()
             }
 
-            // Aquí mezclamos lo que viene de AWS con las preferencias locales
             parejasVisibles = parejasOriginales.map { pareja ->
                 ParejaVisual(
                     idPareja = pareja.idPareja,
@@ -149,19 +154,22 @@ class MisParejasActivity : ComponentActivity() {
                         pareja.idPareja,
                         pareja.nombrePareja
                     ),
-                    iconoResId = parejaPrefs.obtenerIconoParejaResId(pareja.idPareja)
+                    iconoResId = parejaPrefs.obtenerIconoParejaResId(pareja.idPareja),
+                    rutaImagenPersonalizada = parejaPrefs.obtenerImagenPersonalizadaPareja(
+                        pareja.idPareja
+                    )
                 )
             }
         }
     }
 }
 
-// Esta clase solo se usa para pintar la pantalla
 data class ParejaVisual(
     val idPareja: Int,
     val nombreParejaOriginal: String,
     val nombreVisible: String,
-    val iconoResId: Int
+    val iconoResId: Int,
+    val rutaImagenPersonalizada: String? = null
 )
 
 private val FondoPantalla = Color.Black
@@ -187,8 +195,7 @@ fun PantallaMisParejas(
                     Image(
                         painter = painterResource(id = R.drawable.logo),
                         contentDescription = "Logo AllTogether",
-                        modifier = Modifier
-                            .size(width = 210.dp, height = 74.dp)
+                        modifier = Modifier.size(width = 210.dp, height = 74.dp)
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -245,6 +252,7 @@ fun PantallaMisParejas(
                 ParejaCard(
                     nombrePareja = pareja.nombreVisible,
                     iconoResId = pareja.iconoResId,
+                    rutaImagenPersonalizada = pareja.rutaImagenPersonalizada,
                     onClick = {
                         onOpenDashboard(
                             pareja.idPareja,
@@ -270,6 +278,7 @@ fun PantallaMisParejas(
 fun ParejaCard(
     nombrePareja: String,
     iconoResId: Int,
+    rutaImagenPersonalizada: String?,
     onClick: () -> Unit,
     onIconClick: () -> Unit
 ) {
@@ -291,6 +300,7 @@ fun ParejaCard(
         ) {
             Card(
                 modifier = Modifier
+                    .size(60.dp)
                     .clickable { onIconClick() },
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
@@ -298,13 +308,22 @@ fun ParejaCard(
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
             ) {
-                Image(
-                    painter = painterResource(id = iconoResId),
-                    contentDescription = nombrePareja,
-                    modifier = Modifier
-                        .size(60.dp)
-                        .padding(8.dp)
-                )
+                if (rutaImagenPersonalizada != null) {
+                    ImagenParejaGuardadaMini(
+                        rutaImagen = rutaImagenPersonalizada,
+                        fallbackResId = iconoResId,
+                        contentDescription = nombrePareja,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = iconoResId),
+                        contentDescription = nombrePareja,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(8.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -316,6 +335,37 @@ fun ParejaCard(
                 color = Color.White
             )
         }
+    }
+}
+
+@Composable
+fun ImagenParejaGuardadaMini(
+    rutaImagen: String?,
+    fallbackResId: Int,
+    contentDescription: String,
+    modifier: Modifier = Modifier
+) {
+    val bitmap = runCatching {
+        if (rutaImagen.isNullOrBlank()) {
+            null
+        } else {
+            BitmapFactory.decodeFile(File(rutaImagen).absolutePath)
+        }
+    }.getOrNull()
+
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = contentDescription,
+            modifier = modifier,
+            contentScale = ContentScale.Crop
+        )
+    } else {
+        Image(
+            painter = painterResource(id = fallbackResId),
+            contentDescription = contentDescription,
+            modifier = modifier.padding(8.dp)
+        )
     }
 }
 

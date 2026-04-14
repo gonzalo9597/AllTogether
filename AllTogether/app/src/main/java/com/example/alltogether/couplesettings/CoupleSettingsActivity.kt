@@ -2,6 +2,7 @@ package com.example.alltogether.couplesettings
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -52,13 +53,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.alltogether.couplesettings.RecurringExpensesActivity
 import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.selectoricono.SelectorIconoParejaActivity
 import com.example.alltogether.ui.theme.AllTogetherTheme
@@ -66,6 +67,7 @@ import com.example.alltogether.util.ParejaPreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 
 private val FondoPantalla = Color.Black
 private val VerdePrincipal = Color(0xFF2DBC94)
@@ -93,10 +95,12 @@ class CoupleSettingsActivity : ComponentActivity() {
 fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
     val context = LocalContext.current
     val prefs = remember { ParejaPreferencesManager(context) }
+
     var codigoInvitacion by remember { mutableStateOf("") }
     var cargandoCodigo by remember { mutableStateOf(false) }
     var mostrarConfirmacion by remember { mutableStateOf(false) }
     var cargandoAbandonar by remember { mutableStateOf(false) }
+
     var nombreVisible by remember {
         mutableStateOf(prefs.obtenerNombreVisible(idPareja, nombrePareja))
     }
@@ -105,13 +109,25 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
         mutableStateOf(prefs.obtenerNombreIconoPareja(idPareja))
     }
 
+    var rutaImagenPersonalizada by remember {
+        mutableStateOf(prefs.obtenerImagenPersonalizadaPareja(idPareja))
+    }
+
     val selectorLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val nuevoNombreIcono =
-                result.data?.getStringExtra("icono_nombre") ?: nombreIcono
-            nombreIcono = nuevoNombreIcono
+            val nuevoNombreIcono = result.data?.getStringExtra("icono_nombre")
+            val nuevaRutaImagen = result.data?.getStringExtra("imagen_personalizada_path")
+
+            if (nuevoNombreIcono != null) {
+                nombreIcono = nuevoNombreIcono
+                rutaImagenPersonalizada = null
+            }
+
+            if (nuevaRutaImagen != null) {
+                rutaImagenPersonalizada = nuevaRutaImagen
+            }
         }
     }
 
@@ -223,14 +239,26 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
                     ) {
-                        Image(
-                            painter = painterResource(id = prefs.nombreIconoAResId(nombreIcono)),
-                            contentDescription = "Icono pareja",
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(140.dp)
-                                .padding(12.dp)
-                        )
+                        if (rutaImagenPersonalizada != null) {
+                            ImagenParejaGuardada(
+                                rutaImagen = rutaImagenPersonalizada,
+                                fallbackResId = prefs.nombreIconoAResId(nombreIcono),
+                                contentDescription = "Imagen pareja",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(140.dp)
+                                    .padding(12.dp)
+                            )
+                        } else {
+                            Image(
+                                painter = painterResource(id = prefs.nombreIconoAResId(nombreIcono)),
+                                contentDescription = "Icono pareja",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(140.dp)
+                                    .padding(12.dp)
+                            )
+                        }
                     }
 
                     OutlinedTextField(
@@ -251,7 +279,6 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    // Sección para compartir el código de invitación con la pareja
                     Text(
                         text = "Invitar a tu pareja",
                         style = MaterialTheme.typography.titleMedium,
@@ -291,7 +318,6 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                         }
                     }
 
-                    // Muestra el código generado para que el usuario lo comparta
                     if (codigoInvitacion.isNotBlank()) {
                         Text(
                             text = "Código: $codigoInvitacion",
@@ -350,7 +376,6 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
 
                     Spacer(modifier = Modifier.height(18.dp))
 
-                    // Sección para abandonar la pareja
                     Text(
                         text = "Zona de peligro",
                         style = MaterialTheme.typography.titleMedium,
@@ -359,7 +384,6 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                     )
 
                     if (!mostrarConfirmacion) {
-                        // Primer click — pedir confirmación antes de abandonar
                         Button(
                             onClick = { mostrarConfirmacion = true },
                             colors = ButtonDefaults.buttonColors(
@@ -374,13 +398,13 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                             Text("Abandonar pareja")
                         }
                     } else {
-                        // Segunda pantalla — confirmar que realmente quiere abandonar
                         Text(
                             text = "¿Estás seguro? Esta acción no se puede deshacer.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.White,
                             modifier = Modifier.padding(top = 8.dp)
                         )
+
                         Button(
                             onClick = {
                                 cargandoAbandonar = true
@@ -390,7 +414,6 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                                     }
                                     resultado
                                         .onSuccess {
-                                            // Volver a MisParejas tras abandonar
                                             val activity = context as ComponentActivity
                                             activity.setResult(Activity.RESULT_OK)
                                             activity.finish()
@@ -447,7 +470,15 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                     Button(
                         onClick = {
                             prefs.guardarNombreVisible(idPareja, nombreVisible)
-                            prefs.guardarIconoPareja(idPareja, nombreIcono)
+
+                            if (rutaImagenPersonalizada != null) {
+                                prefs.guardarImagenPersonalizadaPareja(
+                                    idPareja,
+                                    rutaImagenPersonalizada!!
+                                )
+                            } else {
+                                prefs.guardarIconoPareja(idPareja, nombreIcono)
+                            }
 
                             val activity = context as ComponentActivity
                             activity.setResult(Activity.RESULT_OK)
@@ -465,5 +496,37 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun ImagenParejaGuardada(
+    rutaImagen: String?,
+    fallbackResId: Int,
+    contentDescription: String,
+    modifier: Modifier = Modifier
+) {
+    val bitmap = remember(rutaImagen) {
+        runCatching {
+            if (rutaImagen.isNullOrBlank()) {
+                null
+            } else {
+                BitmapFactory.decodeFile(File(rutaImagen).absolutePath)
+            }
+        }.getOrNull()
+    }
+
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = contentDescription,
+            modifier = modifier
+        )
+    } else {
+        Image(
+            painter = painterResource(id = fallbackResId),
+            contentDescription = contentDescription,
+            modifier = modifier
+        )
     }
 }
