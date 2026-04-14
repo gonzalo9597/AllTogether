@@ -6,23 +6,43 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,9 +52,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.alltogether.TopAppBarWithBack
+import androidx.compose.ui.unit.sp
 import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.ui.theme.AllTogetherTheme
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +66,11 @@ import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+
+private val FondoPantalla = Color.Black
+private val VerdePrincipal = Color(0xFF2DBC94)
+private val VerdeSuave = Color(0xFFA6E6DB)
+private val GrisTexto = Color(0xFF1F1F1F)
 
 class AddExpenseActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,6 +89,7 @@ private fun formatearFecha(calendario: Calendar): String {
     return SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendario.time)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaAddExpense(idPareja: Int) {
     val context = LocalContext.current
@@ -122,222 +151,380 @@ fun PantallaAddExpense(idPareja: Int) {
         ?.second ?: "Ocio"
 
     Scaffold(
+        containerColor = FondoPantalla,
         topBar = {
-            TopAppBarWithBack(
-                title = "Añadir gasto",
-                onBackClick = { activity.finish() }
+            CenterAlignedTopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = { activity.finish() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = Color.White
+                        )
+                    }
+                },
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.AccountBalanceWallet,
+                            contentDescription = "Añadir gasto",
+                            tint = Color.White
+                        )
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Text(
+                            text = "Añadir gasto",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontFamily = FontFamily.Serif,
+                            color = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = VerdePrincipal
+                )
             )
         }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(FondoPantalla)
                 .padding(innerPadding)
-                .padding(16.dp)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            OutlinedTextField(
-                value = titulo,
-                onValueChange = { titulo = it },
-                label = { Text("Título del gasto") },
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            OutlinedTextField(
-                value = cantidad,
-                onValueChange = { cantidad = it },
-                label = { Text("Cantidad (€)") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            )
-
-            OutlinedTextField(
-                value = comentario,
-                onValueChange = { comentario = it },
-                label = { Text("Comentario (opcional)") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            )
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = VerdeSuave
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
             ) {
-                Text(
-                    text = "Categoría",
-                    modifier = Modifier.width(120.dp)
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 18.dp)
+                ) {
+                    Text(
+                        text = "Registra un nuevo gasto",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = GrisTexto
+                    )
 
-                Box(modifier = Modifier.weight(1f)) {
-                    OutlinedButton(
-                        onClick = { desplegableCategoriaAbierto = true },
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(textoCategoria)
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Añade el importe, quién lo pagó, la categoría y la fecha del gasto.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = GrisTexto
+                    )
+                }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = VerdePrincipal
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp)
+                ) {
+                    Text(
+                        text = "Datos del gasto",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    OutlinedTextField(
+                        value = titulo,
+                        onValueChange = { titulo = it },
+                        label = { Text("Título del gasto", color = Color.Black.copy(alpha = 0.85f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = cantidad,
+                        onValueChange = { cantidad = it },
+                        label = { Text("Cantidad (€)", color = Color.Black.copy(alpha = 0.85f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    OutlinedTextField(
+                        value = comentario,
+                        onValueChange = { comentario = it },
+                        label = { Text("Comentario (opcional)", color = Color.Black.copy(alpha = 0.85f)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = VerdeSuave.copy(alpha = 0.55f)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Text(
+                        text = "Categoría",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { desplegableCategoriaAbierto = true },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = VerdeSuave,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = textoCategoria,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = desplegableCategoriaAbierto,
+                            onDismissRequest = { desplegableCategoriaAbierto = false }
+                        ) {
+                            categoriasEspontaneas.forEach { (idCategoria, nombreCategoria) ->
+                                DropdownMenuItem(
+                                    text = { Text(nombreCategoria) },
+                                    onClick = {
+                                        idCategoriaSeleccionada = idCategoria
+                                        desplegableCategoriaAbierto = false
+                                    }
+                                )
+                            }
+                        }
                     }
 
-                    DropdownMenu(
-                        expanded = desplegableCategoriaAbierto,
-                        onDismissRequest = { desplegableCategoriaAbierto = false }
-                    ) {
-                        categoriasEspontaneas.forEach { (idCategoria, nombreCategoria) ->
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = VerdeSuave.copy(alpha = 0.55f)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Text(
+                        text = "Pagado por",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(
+                            onClick = { desplegablePagadoPorAbierto = true },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = VerdeSuave,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = textoPagadoPor,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = desplegablePagadoPorAbierto,
+                            onDismissRequest = { desplegablePagadoPorAbierto = false }
+                        ) {
                             DropdownMenuItem(
-                                text = { Text(nombreCategoria) },
+                                text = { Text(nombreYo) },
                                 onClick = {
-                                    idCategoriaSeleccionada = idCategoria
-                                    desplegableCategoriaAbierto = false
+                                    pagadoPor = rolYo
+                                    desplegablePagadoPorAbierto = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(nombreOtro) },
+                                onClick = {
+                                    pagadoPor = rolOtro
+                                    desplegablePagadoPorAbierto = false
                                 }
                             )
                         }
                     }
-                }
-            }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Pagado por",
-                    modifier = Modifier.width(120.dp)
-                )
+                    Spacer(modifier = Modifier.height(18.dp))
 
-                Box(modifier = Modifier.weight(1f)) {
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = VerdeSuave.copy(alpha = 0.55f)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Text(
+                        text = "Cuando",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     OutlinedButton(
-                        onClick = { desplegablePagadoPorAbierto = true },
+                        onClick = {
+                            DatePickerDialog(
+                                context,
+                                { _, year, month, dayOfMonth ->
+                                    calendario.set(Calendar.YEAR, year)
+                                    calendario.set(Calendar.MONTH, month)
+                                    calendario.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                                    fechaGasto = formatearFecha(calendario)
+                                },
+                                calendario.get(Calendar.YEAR),
+                                calendario.get(Calendar.MONTH),
+                                calendario.get(Calendar.DAY_OF_MONTH)
+                            ).show()
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = VerdeSuave,
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(textoPagadoPor)
+                        Text(
+                            text = fechaGasto,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
 
-                    DropdownMenu(
-                        expanded = desplegablePagadoPorAbierto,
-                        onDismissRequest = { desplegablePagadoPorAbierto = false }
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = VerdeSuave.copy(alpha = 0.55f)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Button(
+                        onClick = {
+                            val cantidadDouble = cantidad.toDoubleOrNull()
+
+                            if (titulo.isBlank()) {
+                                mensaje = "Introduce un título para el gasto"
+                                return@Button
+                            }
+
+                            if (cantidadDouble == null || cantidadDouble <= 0) {
+                                mensaje = "Introduce una cantidad válida"
+                                return@Button
+                            }
+
+                            cargando = true
+                            mensaje = ""
+
+                            coroutineScope.launch {
+                                val resultado = withContext(Dispatchers.IO) {
+                                    service.guardarGasto(
+                                        idPareja = idPareja,
+                                        tituloGasto = titulo,
+                                        cantidadTotal = cantidadDouble,
+                                        comentario = comentario,
+                                        fechaGasto = fechaGasto,
+                                        pagadoPor = pagadoPor,
+                                        idCategoria = idCategoriaSeleccionada
+                                    )
+                                }
+
+                                resultado
+                                    .onSuccess { gasto ->
+                                        mensaje = "Gasto guardado — cada uno paga ${gasto.importeUsuario1}€"
+                                        titulo = ""
+                                        cantidad = ""
+                                        comentario = ""
+                                        fechaGasto = formatearFecha(Calendar.getInstance())
+                                        idCategoriaSeleccionada = 4
+                                        activity.setResult(Activity.RESULT_OK)
+                                        activity.finish()
+                                    }
+                                    .onFailure {
+                                        mensaje = "No se pudo guardar el gasto"
+                                    }
+
+                                cargando = false
+                            }
+                        },
+                        enabled = !cargando,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = VerdeSuave,
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        DropdownMenuItem(
-                            text = { Text(nombreYo) },
-                            onClick = {
-                                pagadoPor = rolYo
-                                desplegablePagadoPorAbierto = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(nombreOtro) },
-                            onClick = {
-                                pagadoPor = rolOtro
-                                desplegablePagadoPorAbierto = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "Cuando",
-                    modifier = Modifier.width(120.dp)
-                )
-
-                OutlinedButton(
-                    onClick = {
-                        DatePickerDialog(
-                            context,
-                            { _, year, month, dayOfMonth ->
-                                calendario.set(Calendar.YEAR, year)
-                                calendario.set(Calendar.MONTH, month)
-                                calendario.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                                fechaGasto = formatearFecha(calendario)
-                            },
-                            calendario.get(Calendar.YEAR),
-                            calendario.get(Calendar.MONTH),
-                            calendario.get(Calendar.DAY_OF_MONTH)
-                        ).show()
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(fechaGasto)
-                }
-            }
-
-            Button(
-                onClick = {
-                    val cantidadDouble = cantidad.toDoubleOrNull()
-
-                    if (titulo.isBlank()) {
-                        mensaje = "Introduce un título para el gasto"
-                        return@Button
-                    }
-
-                    if (cantidadDouble == null || cantidadDouble <= 0) {
-                        mensaje = "Introduce una cantidad válida"
-                        return@Button
-                    }
-
-                    cargando = true
-                    mensaje = ""
-
-                    coroutineScope.launch {
-                        val resultado = withContext(Dispatchers.IO) {
-                            service.guardarGasto(
-                                idPareja = idPareja,
-                                tituloGasto = titulo,
-                                cantidadTotal = cantidadDouble,
-                                comentario = comentario,
-                                fechaGasto = fechaGasto,
-                                pagadoPor = pagadoPor,
-                                idCategoria = idCategoriaSeleccionada
+                        if (cargando) {
+                            CircularProgressIndicator(
+                                color = Color.Black,
+                                strokeWidth = 2.5.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Guardar gasto",
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
-
-                        resultado
-                            .onSuccess { gasto ->
-                                mensaje = "Gasto guardado — cada uno paga ${gasto.importeUsuario1}€"
-                                titulo = ""
-                                cantidad = ""
-                                comentario = ""
-                                fechaGasto = formatearFecha(Calendar.getInstance())
-                                idCategoriaSeleccionada = 4
-                                activity.setResult(Activity.RESULT_OK)
-                                activity.finish()
-                            }
-                            .onFailure {
-                                mensaje = "No se pudo guardar el gasto"
-                            }
-
-                        cargando = false
                     }
-                },
-                enabled = !cargando,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp)
-            ) {
-                if (cargando) {
-                    CircularProgressIndicator()
-                } else {
-                    Text("Guardar gasto")
-                }
-            }
 
-            if (mensaje.isNotBlank()) {
-                Text(
-                    text = mensaje,
-                    modifier = Modifier.padding(top = 12.dp),
-                    color = MaterialTheme.colorScheme.primary
-                )
+                    if (mensaje.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(14.dp))
+                        Text(
+                            text = mensaje,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Black
+                        )
+                    }
+                }
             }
         }
     }
