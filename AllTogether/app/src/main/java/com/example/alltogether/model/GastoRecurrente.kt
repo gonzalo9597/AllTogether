@@ -19,5 +19,7 @@ data class GastoRecurrente(
     val fechaFin: String? = null,
     val activo: Boolean,
     val ultimaGeneracion: String? = null,
-    val nombreCategoria: String = ""
+    val nombreCategoria: String = "",
+    val porcentajeUsuario1: Double? = null,
+    val porcentajeUsuario2: Double? = null
 ) : JSerializable
