@@ -8,6 +8,8 @@ import kotlinx.serialization.Serializable
 import com.example.alltogether.model.GastoResponse
 import com.example.alltogether.model.Gasto
 import com.example.alltogether.model.GastoRecurrente
+import io.ktor.client.statement.bodyAsText
+
 // Estructura de la respuesta que devuelve el servidor tras login/register
 // @Serializable permite que Ktor convierta automáticamente el JSON a este objeto
 @Serializable
@@ -517,6 +519,25 @@ class AllTogetherService {
                 Result.failure(Exception("Error al actualizar la divisa"))
             }
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    suspend fun loginGoogle(idToken: String): Result<LoginResponse> {
+        return try {
+            val response = ApiClient.http.post("${ApiClient.BASE_URL}/login") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("idToken" to idToken))
+            }
+            android.util.Log.d("GoogleAuth", "Lambda status: ${response.status.value}")
+            if (response.status.value in 200..299) {
+                Result.success(response.body<LoginResponse>())
+            } else {
+                val bodyText = response.bodyAsText()
+                android.util.Log.e("GoogleAuth", "Lambda error body: $bodyText")
+                Result.failure(Exception("Error al iniciar sesión con Google"))
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("GoogleAuth", "Excepcion HTTP: ${e.message}", e)
             Result.failure(e)
         }
     }
