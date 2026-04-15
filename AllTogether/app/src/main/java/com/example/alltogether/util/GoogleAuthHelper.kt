@@ -4,9 +4,9 @@ import android.app.Activity
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
-import com.example.alltogether.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import java.util.UUID
 
 class GoogleAuthHelper(private val activity: Activity) {
 
@@ -16,7 +16,7 @@ class GoogleAuthHelper(private val activity: Activity) {
                 .setFilterByAuthorizedAccounts(false)
                 .setServerClientId("663840092355-1h1g8jlahlactr3a3g3np87k39jn1jnq.apps.googleusercontent.com")
                 .setAutoSelectEnabled(false)
-                .setNonce(java.util.UUID.randomUUID().toString())
+                .setNonce(UUID.randomUUID().toString())
                 .build()
 
             val request = GetCredentialRequest.Builder()
@@ -34,7 +34,7 @@ class GoogleAuthHelper(private val activity: Activity) {
                 googleCredential.idToken
             } else null
         } catch (e: Exception) {
-            android.util.Log.e("GoogleAuth", "Excepcion en signIn: ${e::class.java.simpleName} - ${e.message}", e)
+            android.util.Log.e("GoogleAuth", "Error: ${e::class.java.simpleName} - ${e.message}", e)
             null
         }
     }

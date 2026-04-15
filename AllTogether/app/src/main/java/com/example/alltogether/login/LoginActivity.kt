@@ -57,8 +57,10 @@ import com.example.alltogether.R
 import com.example.alltogether.couples.MisParejasActivity
 import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.network.ApiClient
+import com.example.alltogether.network.LoginResponse
 import com.example.alltogether.register.RegisterActivity
 import com.example.alltogether.ui.theme.AllTogetherTheme
+import com.example.alltogether.util.GoogleAuthHelper
 import com.example.alltogether.util.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -94,10 +96,22 @@ fun PantallaLogin() {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
-
-    // Controla si el botón está desactivado mientras se hace la petición
-    // para evitar que el usuario pulse dos veces
     var cargando by remember { mutableStateOf(false) }
+    var cargandoGoogle by remember { mutableStateOf(false) }
+    val googleAuthHelper = remember { GoogleAuthHelper(context as ComponentActivity) }
+
+    fun navegarAParejas(loginResponse: LoginResponse) {
+        sessionManager.saveSession(
+            token = loginResponse.token,
+            userId = loginResponse.idUsuario,
+            userName = loginResponse.nombre,
+            email = loginResponse.email
+        )
+        ApiClient.token = loginResponse.token
+        ApiClient.appContext = context.applicationContext
+        context.startActivity(Intent(context, MisParejasActivity::class.java))
+        (context as ComponentActivity).finish()
+    }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -108,9 +122,7 @@ fun PantallaLogin() {
                 cargando = false
             }
         }
-
         lifecycleOwner.lifecycle.addObserver(observer)
-
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
@@ -196,7 +208,6 @@ fun PantallaLogin() {
                         value = password,
                         onValueChange = { password = it },
                         label = { Text("Contraseña", color = Color.Black.copy(alpha = 0.85f)) },
-                        // Oculta la contraseña con puntos en lugar de texto visible
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
@@ -215,47 +226,25 @@ fun PantallaLogin() {
 
                     Button(
                         onClick = {
-                            // Evitar peticiones vacías
                             if (email.isBlank() || password.isBlank()) {
                                 error = "Introduce email y contraseña"
                                 return@Button
                             }
-
                             cargando = true
                             error = ""
-
                             coroutineScope.launch {
-                                // La llamada de red siempre en IO, nunca en el hilo principal
                                 val resultado = withContext(Dispatchers.IO) {
                                     service.login(email, password)
                                 }
-
                                 resultado
-                                    .onSuccess { loginResponse ->
-                                        // 1. Guardar token cifrado en disco para futuras sesiones
-                                        sessionManager.saveSession(
-                                            token = loginResponse.token,
-                                            userId = loginResponse.idUsuario,
-                                            userName = loginResponse.nombre,
-                                            email = loginResponse.email
-                                        )
-                                        // 2. Inyectar token en el cliente HTTP para esta sesión
-                                        ApiClient.token = loginResponse.token
-                                        ApiClient.appContext = context.applicationContext
-                                        // 3. Navegar a la pantalla principal
-                                        context.startActivity(
-                                            Intent(context, MisParejasActivity::class.java)
-                                        )
-                                        (context as ComponentActivity).finish()
-                                    }
+                                    .onSuccess { navegarAParejas(it) }
                                     .onFailure {
                                         error = "Email o contraseña incorrectos"
                                         cargando = false
                                     }
                             }
                         },
-                        // Desactivar el botón mientras carga para evitar doble envío
-                        enabled = !cargando,
+                        enabled = !cargando && !cargandoGoogle,  // 👈 cambio 1
                         colors = ButtonDefaults.buttonColors(
                             containerColor = VerdeSuave,
                             contentColor = Color.Black
@@ -263,7 +252,6 @@ fun PantallaLogin() {
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // Mostrar spinner mientras carga, texto normal cuando no
                         if (cargando) {
                             CircularProgressIndicator(
                                 color = Color.Black,
@@ -301,6 +289,46 @@ fun PantallaLogin() {
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("Crear cuenta")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // 👈 cambio 2 — botón Google
+                    Button(
+                        onClick = {
+                            cargandoGoogle = true
+                            error = ""
+                            coroutineScope.launch {
+                                val idToken = googleAuthHelper.signIn()
+                                if (idToken != null) {
+                                    val resultado = withContext(Dispatchers.IO) {
+                                        service.loginGoogle(idToken)
+                                    }
+                                    resultado
+                                        .onSuccess { navegarAParejas(it) }
+                                        .onFailure {
+                                            error = "Error al iniciar sesión con Google"
+                                            cargandoGoogle = false
+                                        }
+                                } else {
+                                    error = "No se pudo obtener el token de Google"
+                                    cargandoGoogle = false
+                                }
+                            }
+                        },
+                        enabled = !cargando && !cargandoGoogle,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (cargandoGoogle) {
+                            CircularProgressIndicator(color = Color.Black, strokeWidth = 2.5.dp)
+                        } else {
+                            Text("Continuar con Google", fontWeight = FontWeight.SemiBold)
+                        }
                     }
 
                     if (error.isNotBlank()) {
