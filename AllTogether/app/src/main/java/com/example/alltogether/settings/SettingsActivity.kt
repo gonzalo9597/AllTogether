@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -40,9 +41,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -60,6 +65,7 @@ import com.example.alltogether.login.LoginActivity
 import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.ui.theme.AllTogetherTheme
 import com.example.alltogether.util.CurrencyPreferencesManager
+import com.example.alltogether.util.ScreenUiState
 import com.example.alltogether.util.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -95,6 +101,17 @@ fun PantallaSettings() {
     var divisa by remember { mutableStateOf(currencyManager.obtenerDivisa()) }
     var mostrarConfirmacionEliminar by remember { mutableStateOf(false) }
     var cargandoEliminar by remember { mutableStateOf(false) }
+
+    var mostrarCardInfo by remember { mutableStateOf(ScreenUiState.mostrarCardInfoSettings) }
+
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+            mostrarCardInfo = false
+            ScreenUiState.mostrarCardInfoSettings = false
+        }
+    }
 
     Scaffold(
         containerColor = FondoPantalla,
@@ -149,34 +166,44 @@ fun PantallaSettings() {
                 .padding(horizontal = 16.dp, vertical = 18.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = VerdeSuave
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 18.dp)
-                ) {
-                    Text(
-                        text = "Ajusta tu cuenta",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = GrisTexto
-                    )
+            AnimatedVisibility(visible = mostrarCardInfo) {
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = true,
+                    enableDismissFromEndToStart = true,
+                    backgroundContent = {},
+                    content = {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = VerdeSuave
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 18.dp)
+                            ) {
+                                Text(
+                                    text = "Ajusta tu cuenta",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GrisTexto
+                                )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
 
-                    Text(
-                        text = "Gestiona tu divisa, tu sesión y las opciones más importantes de tu cuenta.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = GrisTexto
-                    )
-                }
+                                Text(
+                                    text = "Gestiona tu divisa, tu sesión y las opciones más importantes de tu cuenta",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = GrisTexto
+                                )
+                            }
+                        }
+                    }
+                )
             }
 
             Card(
@@ -291,11 +318,14 @@ fun PantallaSettings() {
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Eliminar cuenta")
+                            Text(
+                                text = "Eliminar cuenta",
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     } else {
                         Text(
-                            text = "¿Estás seguro? Se eliminarán todos tus datos y abandonarás todas tus parejas.",
+                            text = "¿Estás seguro? Se eliminarán todos tus datos y abandonarás todas tus parejas",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.Black,
                             modifier = Modifier.padding(bottom = 10.dp)
@@ -337,7 +367,10 @@ fun PantallaSettings() {
                                     strokeWidth = 2.5.dp
                                 )
                             } else {
-                                Text("Sí, eliminar mi cuenta")
+                                Text(
+                                    text = "Sí, eliminar mi cuenta",
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
                         }
 
@@ -347,7 +380,7 @@ fun PantallaSettings() {
                                 cargandoEliminar = false
                             },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Black,
+                                containerColor = VerdeSuave,
                                 contentColor = Color.Black
                             ),
                             shape = RoundedCornerShape(16.dp),
@@ -355,7 +388,10 @@ fun PantallaSettings() {
                                 .fillMaxWidth()
                                 .padding(top = 8.dp)
                         ) {
-                            Text("Cancelar")
+                            Text(
+                                text = "Cancelar",
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
 

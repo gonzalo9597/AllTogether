@@ -282,7 +282,7 @@ fun PantallaLogin() {
                     Text(
                         text = "o",
                         color = Color.White,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
