@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -38,9 +39,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -56,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.ui.theme.AllTogetherTheme
+import com.example.alltogether.util.ScreenUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -90,6 +96,16 @@ fun PantallaAddCouple() {
     var mensaje by remember { mutableStateOf("") }
     var cargando by remember { mutableStateOf(false) }
     var cargandoUnirse by remember { mutableStateOf(false) }
+
+    var mostrarCardInfo by remember { mutableStateOf(ScreenUiState.mostrarCardInfoAddCouple) }
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+            mostrarCardInfo = false
+            ScreenUiState.mostrarCardInfoAddCouple = false
+        }
+    }
 
     Scaffold(
         containerColor = FondoPantalla,
@@ -144,34 +160,44 @@ fun PantallaAddCouple() {
                 .padding(horizontal = 16.dp, vertical = 18.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = VerdeSuave
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 18.dp)
-                ) {
-                    Text(
-                        text = "Gestiona tus parejas",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = GrisTexto
-                    )
+            AnimatedVisibility(visible = mostrarCardInfo) {
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = true,
+                    enableDismissFromEndToStart = true,
+                    backgroundContent = {},
+                    content = {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = VerdeSuave
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 18.dp)
+                            ) {
+                                Text(
+                                    text = "Gestiona tus parejas",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GrisTexto
+                                )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
 
-                    Text(
-                        text = "Crea una nueva pareja o únete con un código de invitación.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = GrisTexto
-                    )
-                }
+                                Text(
+                                    text = "Crea una nueva pareja o únete con un código de invitación",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = GrisTexto
+                                )
+                            }
+                        }
+                    }
+                )
             }
 
             Card(
@@ -291,7 +317,6 @@ fun PantallaAddCouple() {
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
-
                     }
 
                     OutlinedTextField(
