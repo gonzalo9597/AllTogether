@@ -192,7 +192,7 @@ fun PantallaRegister() {
                                 Spacer(modifier = Modifier.height(6.dp))
 
                                 Text(
-                                    text = "Crea tu cuenta para empezar a gestionar gastos y parejas dentro de la app.",
+                                    text = "Crea tu cuenta para empezar a gestionar gastos y parejas dentro de la app",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = GrisTexto
                                 )
