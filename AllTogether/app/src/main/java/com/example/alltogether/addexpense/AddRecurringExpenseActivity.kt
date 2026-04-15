@@ -1,13 +1,16 @@
 package com.example.alltogether.addexpense
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -19,6 +22,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -27,10 +31,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.alltogether.TopAppBarWithBack
 import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.ui.theme.AllTogetherTheme
+import com.example.alltogether.util.ParejaPreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,7 +45,9 @@ class AddRecurringExpenseActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         val idPareja = intent.getIntExtra("id_pareja", -1)
+
         setContent {
             AllTogetherTheme {
                 PantallaAddRecurringExpense(idPareja)
@@ -52,8 +60,10 @@ class AddRecurringExpenseActivity : ComponentActivity() {
 @Composable
 fun PantallaAddRecurringExpense(idPareja: Int) {
     val context = LocalContext.current
+    val activity = context as ComponentActivity
     val service = remember { AllTogetherService() }
     val coroutineScope = rememberCoroutineScope()
+    val prefs = remember { ParejaPreferencesManager(context) }
 
     var titulo by remember { mutableStateOf("") }
     var cantidad by remember { mutableStateOf("") }
@@ -61,7 +71,8 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
     var mensaje by remember { mutableStateOf("") }
     var cargando by remember { mutableStateOf(false) }
 
-    // Categorías recurrentes (fijas)
+    var rolYo by remember { mutableStateOf("USUARIO_1") }
+
     val categorias = listOf(
         5 to "Alquiler",
         6 to "Suministros",
@@ -70,15 +81,12 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
     var idCategoriaSeleccionada by remember { mutableIntStateOf(5) }
     var expandidoCategoria by remember { mutableStateOf(false) }
 
-    // Selector de frecuencia
     val frecuencias = listOf("DIARIO", "SEMANAL", "MENSUAL", "ANUAL")
     var frecuenciaSeleccionada by remember { mutableStateOf("MENSUAL") }
     var expandidoFrecuencia by remember { mutableStateOf(false) }
 
-    // Día del mes para gastos mensuales
     var diaDelMes by remember { mutableStateOf("1") }
 
-    // Día de la semana para gastos semanales
     val diasSemana = listOf(
         1 to "Lunes",
         2 to "Martes",
@@ -91,6 +99,34 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
     var diaSemanaSeleccionado by remember { mutableIntStateOf(1) }
     var expandidoDiaSemana by remember { mutableStateOf(false) }
 
+    val porcentajeUsuario1Default = remember(idPareja) {
+        prefs.obtenerPorcentajeUsuario1RepartoDefault(idPareja)
+    }
+    val porcentajeUsuario2Default = remember(idPareja) {
+        prefs.obtenerPorcentajeUsuario2RepartoDefault(idPareja)
+    }
+
+    var porcentajeYoTexto by remember { mutableStateOf("50") }
+    var porcentajeOtroTexto by remember { mutableStateOf("50") }
+
+    LaunchedEffect(idPareja) {
+        val resultado = withContext(Dispatchers.IO) {
+            service.getBalance(idPareja)
+        }
+
+        resultado.onSuccess { balance ->
+            rolYo = balance.rolUsuario
+
+            if (rolYo == "USUARIO_1") {
+                porcentajeYoTexto = porcentajeUsuario1Default.toString()
+                porcentajeOtroTexto = porcentajeUsuario2Default.toString()
+            } else {
+                porcentajeYoTexto = porcentajeUsuario2Default.toString()
+                porcentajeOtroTexto = porcentajeUsuario1Default.toString()
+            }
+        }
+    }
+
     val nombreCategoriaSeleccionada =
         categorias.firstOrNull { it.first == idCategoriaSeleccionada }?.second ?: "Alquiler"
 
@@ -101,7 +137,7 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
         topBar = {
             TopAppBarWithBack(
                 title = "Gasto recurrente",
-                onBackClick = { (context as ComponentActivity).finish() }
+                onBackClick = { activity.finish() }
             )
         }
     ) { innerPadding ->
@@ -109,7 +145,8 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             OutlinedTextField(
                 value = titulo,
@@ -122,18 +159,14 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                 value = cantidad,
                 onValueChange = { cantidad = it },
                 label = { Text("Cantidad (€)") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
             )
 
-            // Selector de categoría con el mismo formato visual que frecuencia
             ExposedDropdownMenuBox(
                 expanded = expandidoCategoria,
                 onExpandedChange = { expandidoCategoria = !expandidoCategoria },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
                     value = nombreCategoriaSeleccionada,
@@ -147,6 +180,7 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                         .fillMaxWidth()
                         .menuAnchor()
                 )
+
                 ExposedDropdownMenu(
                     expanded = expandidoCategoria,
                     onDismissRequest = { expandidoCategoria = false }
@@ -163,13 +197,10 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                 }
             }
 
-            // Selector de frecuencia con dropdown
             ExposedDropdownMenuBox(
                 expanded = expandidoFrecuencia,
                 onExpandedChange = { expandidoFrecuencia = !expandidoFrecuencia },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
                     value = frecuenciaSeleccionada,
@@ -183,6 +214,7 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                         .fillMaxWidth()
                         .menuAnchor()
                 )
+
                 ExposedDropdownMenu(
                     expanded = expandidoFrecuencia,
                     onDismissRequest = { expandidoFrecuencia = false }
@@ -199,26 +231,21 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                 }
             }
 
-            // Mostrar campo día del mes solo si es mensual
             if (frecuenciaSeleccionada == "MENSUAL") {
                 OutlinedTextField(
                     value = diaDelMes,
                     onValueChange = { diaDelMes = it },
                     label = { Text("Día del mes (1-28)") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
 
-            // Mostrar selector de día de la semana si es semanal
             if (frecuenciaSeleccionada == "SEMANAL") {
                 ExposedDropdownMenuBox(
                     expanded = expandidoDiaSemana,
                     onExpandedChange = { expandidoDiaSemana = !expandidoDiaSemana },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     OutlinedTextField(
                         value = nombreDiaSemanaSeleccionado,
@@ -232,6 +259,7 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                             .fillMaxWidth()
                             .menuAnchor()
                     )
+
                     ExposedDropdownMenu(
                         expanded = expandidoDiaSemana,
                         onDismissRequest = { expandidoDiaSemana = false }
@@ -250,17 +278,51 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
             }
 
             OutlinedTextField(
+                value = porcentajeYoTexto,
+                onValueChange = { nuevoValor ->
+                    val numero = nuevoValor.toIntOrNull()
+                    if (nuevoValor.isEmpty()) {
+                        porcentajeYoTexto = ""
+                        porcentajeOtroTexto = ""
+                    } else if (numero != null && numero in 0..100) {
+                        porcentajeYoTexto = numero.toString()
+                        porcentajeOtroTexto = (100 - numero).toString()
+                    }
+                },
+                label = { Text("Tu porcentaje") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+
+            OutlinedTextField(
+                value = porcentajeOtroTexto,
+                onValueChange = { nuevoValor ->
+                    val numero = nuevoValor.toIntOrNull()
+                    if (nuevoValor.isEmpty()) {
+                        porcentajeYoTexto = ""
+                        porcentajeOtroTexto = ""
+                    } else if (numero != null && numero in 0..100) {
+                        porcentajeOtroTexto = numero.toString()
+                        porcentajeYoTexto = (100 - numero).toString()
+                    }
+                },
+                label = { Text("Porcentaje de tu pareja") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+
+            OutlinedTextField(
                 value = comentario,
                 onValueChange = { comentario = it },
                 label = { Text("Comentario (opcional)") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
+                modifier = Modifier.fillMaxWidth()
             )
 
             Button(
                 onClick = {
                     val cantidadDouble = cantidad.toDoubleOrNull()
+                    val porcentajeYo = porcentajeYoTexto.toIntOrNull()
+                    val porcentajeOtro = porcentajeOtroTexto.toIntOrNull()
 
                     if (titulo.isBlank()) {
                         mensaje = "Introduce un título"
@@ -280,14 +342,53 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                         }
                     }
 
-                    cargando = true
-                    mensaje = ""
+                    if (frecuenciaSeleccionada == "SEMANAL" && diaSemanaSeleccionado !in 1..7) {
+                        mensaje = "Selecciona un día de la semana válido"
+                        return@Button
+                    }
+
+                    if (porcentajeYo == null || porcentajeOtro == null) {
+                        mensaje = "Introduce un reparto válido"
+                        return@Button
+                    }
+
+                    if (porcentajeYo !in 0..100 || porcentajeOtro !in 0..100) {
+                        mensaje = "Los porcentajes deben estar entre 0 y 100"
+                        return@Button
+                    }
+
+                    if (porcentajeYo + porcentajeOtro != 100) {
+                        mensaje = "Los porcentajes deben sumar 100"
+                        return@Button
+                    }
+
+                    val porcentajeUsuario1Final = if (rolYo == "USUARIO_1") {
+                        porcentajeYo
+                    } else {
+                        porcentajeOtro
+                    }
+
+                    val porcentajeUsuario2Final = if (rolYo == "USUARIO_1") {
+                        porcentajeOtro
+                    } else {
+                        porcentajeYo
+                    }
+
+                    val modoRepartoFinal =
+                        if (porcentajeUsuario1Final == 50 && porcentajeUsuario2Final == 50) {
+                            "MITAD"
+                        } else {
+                            "PORCENTAJE"
+                        }
 
                     val valorDia = when (frecuenciaSeleccionada) {
                         "MENSUAL" -> diaDelMes.toIntOrNull() ?: 1
                         "SEMANAL" -> diaSemanaSeleccionado
                         else -> 1
                     }
+
+                    cargando = true
+                    mensaje = ""
 
                     coroutineScope.launch {
                         val resultado = withContext(Dispatchers.IO) {
@@ -298,30 +399,44 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                                 frecuencia = frecuenciaSeleccionada,
                                 diaDelMes = valorDia,
                                 idCategoria = idCategoriaSeleccionada,
-                                comentario = comentario
+                                modoReparto = modoRepartoFinal,
+                                comentario = comentario,
+                                porcentajeUsuario1 = porcentajeUsuario1Final.toDouble(),
+                                porcentajeUsuario2 = porcentajeUsuario2Final.toDouble()
                             )
                         }
+
                         resultado
                             .onSuccess {
-                                mensaje = "Gasto recurrente creado correctamente"
                                 titulo = ""
                                 cantidad = ""
                                 comentario = ""
                                 diaDelMes = "1"
                                 diaSemanaSeleccionado = 1
                                 idCategoriaSeleccionada = 5
-                                (context as ComponentActivity).finish()
+
+                                if (rolYo == "USUARIO_1") {
+                                    porcentajeYoTexto = porcentajeUsuario1Default.toString()
+                                    porcentajeOtroTexto = porcentajeUsuario2Default.toString()
+                                } else {
+                                    porcentajeYoTexto = porcentajeUsuario2Default.toString()
+                                    porcentajeOtroTexto = porcentajeUsuario1Default.toString()
+                                }
+
+                                activity.setResult(Activity.RESULT_OK)
+                                activity.finish()
                             }
                             .onFailure {
                                 mensaje = "No se pudo crear el gasto recurrente"
                             }
+
                         cargando = false
                     }
                 },
                 enabled = !cargando,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp)
+                    .padding(top = 8.dp)
             ) {
                 if (cargando) {
                     CircularProgressIndicator()
@@ -333,7 +448,7 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
             if (mensaje.isNotBlank()) {
                 Text(
                     text = mensaje,
-                    modifier = Modifier.padding(top = 12.dp),
+                    modifier = Modifier.padding(top = 8.dp),
                     color = MaterialTheme.colorScheme.primary
                 )
             }

@@ -28,7 +28,10 @@ data class EditarGastoRecurrenteRequest(
     val frecuencia: String,
     val diaDelMes: Int,
     val idCategoria: Int,
-    val comentario: String = ""
+    val modoReparto: String = "MITAD",
+    val comentario: String = "",
+    val porcentajeUsuario1: Double? = null,
+    val porcentajeUsuario2: Double? = null
 )
 
 // Lo que enviamos al servidor para hacer login
@@ -52,7 +55,10 @@ data class EditarGastoRequest(
     val tituloGasto: String,
     val cantidadTotal: Double,
     val comentario: String = "",
-    val idCategoria: Int = 1
+    val idCategoria: Int = 1,
+    val modoReparto: String = "MITAD",
+    val porcentajeUsuario1: Double? = null,
+    val porcentajeUsuario2: Double? = null
 )
 
 @Serializable
@@ -308,7 +314,9 @@ class AllTogetherService {
         val diaDelMes: Int = 1,
         val idCategoria: Int = 1,
         val modoReparto: String = "MITAD",
-        val comentario: String = ""
+        val comentario: String = "",
+        val porcentajeUsuario1: Double? = null,
+        val porcentajeUsuario2: Double? = null
     )
 
     // Respuesta del servidor con el balance entre los dos usuarios de la pareja
@@ -332,20 +340,28 @@ class AllTogetherService {
         frecuencia: String = "MENSUAL",
         diaDelMes: Int = 1,
         idCategoria: Int = 1,
-        comentario: String = ""
+        modoReparto: String = "MITAD",
+        comentario: String = "",
+        porcentajeUsuario1: Double? = null,
+        porcentajeUsuario2: Double? = null
     ): Result<String> {
         return try {
             val response = ApiClient.http.post("${ApiClient.BASE_URL}/recurrentes") {
                 contentType(ContentType.Application.Json)
-                setBody(GastoRecurrenteRequest(
-                    idPareja = idPareja,
-                    tituloGasto = tituloGasto,
-                    cantidadTotal = cantidadTotal,
-                    frecuencia = frecuencia,
-                    diaDelMes = diaDelMes,
-                    idCategoria = idCategoria,
-                    comentario = comentario
-                ))
+                setBody(
+                    GastoRecurrenteRequest(
+                        idPareja = idPareja,
+                        tituloGasto = tituloGasto,
+                        cantidadTotal = cantidadTotal,
+                        frecuencia = frecuencia,
+                        diaDelMes = diaDelMes,
+                        idCategoria = idCategoria,
+                        modoReparto = modoReparto,
+                        comentario = comentario,
+                        porcentajeUsuario1 = porcentajeUsuario1,
+                        porcentajeUsuario2 = porcentajeUsuario2
+                    )
+                )
             }
             if (response.status.value in 200..299) {
                 Result.success("Gasto recurrente creado correctamente")
@@ -380,19 +396,27 @@ class AllTogetherService {
         tituloGasto: String,
         cantidadTotal: Double,
         comentario: String = "",
-        idCategoria: Int = 1
+        idCategoria: Int = 1,
+        modoReparto: String = "MITAD",
+        porcentajeUsuario1: Double? = null,
+        porcentajeUsuario2: Double? = null
     ): Result<String> {
         return try {
             android.util.Log.d("EDITAR_GASTO", "Editando gasto $idGasto: $tituloGasto, $cantidadTotal")
             val response = ApiClient.http.put("${ApiClient.BASE_URL}/gastos") {
                 contentType(ContentType.Application.Json)
-                setBody(EditarGastoRequest(
-                    idGasto = idGasto,
-                    tituloGasto = tituloGasto,
-                    cantidadTotal = cantidadTotal,
-                    comentario = comentario,
-                    idCategoria = idCategoria
-                ))
+                setBody(
+                    EditarGastoRequest(
+                        idGasto = idGasto,
+                        tituloGasto = tituloGasto,
+                        cantidadTotal = cantidadTotal,
+                        comentario = comentario,
+                        idCategoria = idCategoria,
+                        modoReparto = modoReparto,
+                        porcentajeUsuario1 = porcentajeUsuario1,
+                        porcentajeUsuario2 = porcentajeUsuario2
+                    )
+                )
             }
             android.util.Log.d("EDITAR_GASTO", "Respuesta: ${response.status.value}")
             if (response.status.value in 200..299) {
@@ -439,7 +463,10 @@ class AllTogetherService {
         frecuencia: String,
         diaDelMes: Int,
         idCategoria: Int,
-        comentario: String = ""
+        modoReparto: String = "MITAD",
+        comentario: String = "",
+        porcentajeUsuario1: Double? = null,
+        porcentajeUsuario2: Double? = null
     ): Result<String> {
         return try {
             val response = ApiClient.http.put("${ApiClient.BASE_URL}/recurrentes") {
@@ -452,7 +479,10 @@ class AllTogetherService {
                         frecuencia = frecuencia,
                         diaDelMes = diaDelMes,
                         idCategoria = idCategoria,
-                        comentario = comentario
+                        modoReparto = modoReparto,
+                        comentario = comentario,
+                        porcentajeUsuario1 = porcentajeUsuario1,
+                        porcentajeUsuario2 = porcentajeUsuario2
                     )
                 )
             }

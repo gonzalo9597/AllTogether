@@ -14,13 +14,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -56,11 +57,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.ui.theme.AllTogetherTheme
 import com.example.alltogether.util.CurrencyPreferencesManager
+import com.example.alltogether.util.ParejaPreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -77,7 +80,9 @@ class AddExpenseActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         val idPareja = intent.getIntExtra("id_pareja", -1)
+
         setContent {
             AllTogetherTheme {
                 PantallaAddExpense(idPareja)
@@ -94,9 +99,12 @@ private fun formatearFecha(calendario: Calendar): String {
 @Composable
 fun PantallaAddExpense(idPareja: Int) {
     val context = LocalContext.current
+    val activity = context as ComponentActivity
     val service = remember { AllTogetherService() }
     val coroutineScope = rememberCoroutineScope()
-    val activity = context as ComponentActivity
+    val parejaPrefs = remember { ParejaPreferencesManager(context) }
+    val currencyManager = remember { CurrencyPreferencesManager(context) }
+    val simboloDivisa = remember { currencyManager.obtenerSimbolo() }
 
     var titulo by remember { mutableStateOf("") }
     var cantidad by remember { mutableStateOf("") }
@@ -104,7 +112,16 @@ fun PantallaAddExpense(idPareja: Int) {
     var mensaje by remember { mutableStateOf("") }
     var cargando by remember { mutableStateOf(false) }
 
-    // Categorías de gastos espontáneos
+    val porcentajeUsuario1Default = remember(idPareja) {
+        parejaPrefs.obtenerPorcentajeUsuario1RepartoDefault(idPareja)
+    }
+    val porcentajeUsuario2Default = remember(idPareja) {
+        parejaPrefs.obtenerPorcentajeUsuario2RepartoDefault(idPareja)
+    }
+
+    var porcentajeYoTexto by remember { mutableStateOf("50") }
+    var porcentajeOtroTexto by remember { mutableStateOf("50") }
+
     val categoriasEspontaneas = listOf(
         1 to "Supermercado",
         2 to "Restaurante",
@@ -112,21 +129,17 @@ fun PantallaAddExpense(idPareja: Int) {
         4 to "Ocio",
         8 to "Otros"
     )
-    var idCategoriaSeleccionada by remember { mutableStateOf(4) } // Ocio por defecto
+    var idCategoriaSeleccionada by remember { mutableStateOf(4) }
     var desplegableCategoriaAbierto by remember { mutableStateOf(false) }
 
-    // Datos para el selector "Pagado por"
     var nombreYo by remember { mutableStateOf("Tú") }
     var nombreOtro by remember { mutableStateOf("Tu pareja") }
     var rolYo by remember { mutableStateOf("USUARIO_1") }
     var pagadoPor by remember { mutableStateOf("USUARIO_1") }
     var desplegablePagadoPorAbierto by remember { mutableStateOf(false) }
 
-    // Fecha por defecto = hoy
     val calendario = remember { Calendar.getInstance() }
     var fechaGasto by remember { mutableStateOf(formatearFecha(calendario)) }
-    val currencyManager = remember { CurrencyPreferencesManager(context) }
-    val simboloDivisa = remember { currencyManager.obtenerSimbolo() }
 
     LaunchedEffect(idPareja) {
         val resultado = withContext(Dispatchers.IO) {
@@ -138,6 +151,14 @@ fun PantallaAddExpense(idPareja: Int) {
             nombreOtro = balance.nombreOtro
             rolYo = balance.rolUsuario
             pagadoPor = balance.rolUsuario
+
+            if (rolYo == "USUARIO_1") {
+                porcentajeYoTexto = porcentajeUsuario1Default.toString()
+                porcentajeOtroTexto = porcentajeUsuario2Default.toString()
+            } else {
+                porcentajeYoTexto = porcentajeUsuario2Default.toString()
+                porcentajeOtroTexto = porcentajeUsuario1Default.toString()
+            }
         }
     }
 
@@ -167,9 +188,7 @@ fun PantallaAddExpense(idPareja: Int) {
                     }
                 },
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Filled.AccountBalanceWallet,
                             contentDescription = "Añadir gasto",
@@ -208,9 +227,7 @@ fun PantallaAddExpense(idPareja: Int) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = VerdeSuave
-                ),
+                colors = CardDefaults.cardColors(containerColor = VerdeSuave),
                 elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
             ) {
                 Column(
@@ -228,7 +245,7 @@ fun PantallaAddExpense(idPareja: Int) {
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Añade el importe, quién lo pagó, la categoría y la fecha del gasto.",
+                        text = "Añade el importe, quién lo pagó, la categoría, la fecha y el reparto del gasto.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = GrisTexto
                     )
@@ -238,9 +255,7 @@ fun PantallaAddExpense(idPareja: Int) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = VerdePrincipal
-                ),
+                colors = CardDefaults.cardColors(containerColor = VerdePrincipal),
                 elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(
@@ -272,11 +287,12 @@ fun PantallaAddExpense(idPareja: Int) {
                     OutlinedTextField(
                         value = cantidad,
                         onValueChange = { cantidad = it },
-                        label = { Text("Cantidad (€)", color = Color.Black.copy(alpha = 0.85f)) },
+                        label = { Text("Cantidad ($simboloDivisa)", color = Color.Black.copy(alpha = 0.85f)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(16.dp),
                         textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
-                        singleLine = true
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -318,10 +334,7 @@ fun PantallaAddExpense(idPareja: Int) {
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = textoCategoria,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Text(text = textoCategoria, fontWeight = FontWeight.SemiBold)
                         }
 
                         DropdownMenu(
@@ -368,10 +381,7 @@ fun PantallaAddExpense(idPareja: Int) {
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(
-                                text = textoPagadoPor,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Text(text = textoPagadoPor, fontWeight = FontWeight.SemiBold)
                         }
 
                         DropdownMenu(
@@ -393,6 +403,69 @@ fun PantallaAddExpense(idPareja: Int) {
                                 }
                             )
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = VerdeSuave.copy(alpha = 0.55f)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Text(
+                        text = "Reparto del gasto",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = porcentajeYoTexto,
+                            onValueChange = { nuevoValor ->
+                                val numero = nuevoValor.toIntOrNull()
+                                if (nuevoValor.isEmpty()) {
+                                    porcentajeYoTexto = ""
+                                    porcentajeOtroTexto = ""
+                                } else if (numero != null && numero in 0..100) {
+                                    porcentajeYoTexto = numero.toString()
+                                    porcentajeOtroTexto = (100 - numero).toString()
+                                }
+                            },
+                            label = { Text("Tú (%)", color = Color.Black.copy(alpha = 0.85f)) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+
+                        OutlinedTextField(
+                            value = porcentajeOtroTexto,
+                            onValueChange = { nuevoValor ->
+                                val numero = nuevoValor.toIntOrNull()
+                                if (nuevoValor.isEmpty()) {
+                                    porcentajeYoTexto = ""
+                                    porcentajeOtroTexto = ""
+                                } else if (numero != null && numero in 0..100) {
+                                    porcentajeOtroTexto = numero.toString()
+                                    porcentajeYoTexto = (100 - numero).toString()
+                                }
+                            },
+                            label = { Text("Tu pareja (%)", color = Color.Black.copy(alpha = 0.85f)) },
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(18.dp))
@@ -435,10 +508,7 @@ fun PantallaAddExpense(idPareja: Int) {
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = fechaGasto,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Text(text = fechaGasto, fontWeight = FontWeight.SemiBold)
                     }
 
                     Spacer(modifier = Modifier.height(18.dp))
@@ -453,6 +523,8 @@ fun PantallaAddExpense(idPareja: Int) {
                     Button(
                         onClick = {
                             val cantidadDouble = cantidad.toDoubleOrNull()
+                            val porcentajeYo = porcentajeYoTexto.toIntOrNull()
+                            val porcentajeOtro = porcentajeOtroTexto.toIntOrNull()
 
                             if (titulo.isBlank()) {
                                 mensaje = "Introduce un título para el gasto"
@@ -464,6 +536,40 @@ fun PantallaAddExpense(idPareja: Int) {
                                 return@Button
                             }
 
+                            if (porcentajeYo == null || porcentajeOtro == null) {
+                                mensaje = "Introduce un reparto válido"
+                                return@Button
+                            }
+
+                            if (porcentajeYo < 0 || porcentajeOtro < 0) {
+                                mensaje = "Los porcentajes no pueden ser negativos"
+                                return@Button
+                            }
+
+                            if (porcentajeYo + porcentajeOtro != 100) {
+                                mensaje = "Los porcentajes deben sumar 100"
+                                return@Button
+                            }
+
+                            val porcentajeUsuario1Final = if (rolYo == "USUARIO_1") {
+                                porcentajeYo
+                            } else {
+                                porcentajeOtro
+                            }
+
+                            val porcentajeUsuario2Final = if (rolYo == "USUARIO_1") {
+                                porcentajeOtro
+                            } else {
+                                porcentajeYo
+                            }
+
+                            val modoRepartoFinal =
+                                if (porcentajeUsuario1Final == 50 && porcentajeUsuario2Final == 50) {
+                                    "MITAD"
+                                } else {
+                                    "PORCENTAJE"
+                                }
+
                             cargando = true
                             mensaje = ""
 
@@ -473,27 +579,45 @@ fun PantallaAddExpense(idPareja: Int) {
                                         idPareja = idPareja,
                                         tituloGasto = titulo,
                                         cantidadTotal = cantidadDouble,
+                                        modoReparto = modoRepartoFinal,
                                         comentario = comentario,
                                         fechaGasto = fechaGasto,
                                         pagadoPor = pagadoPor,
-                                        idCategoria = idCategoriaSeleccionada
+                                        idCategoria = idCategoriaSeleccionada,
+                                        porcentajeUsuario1 = porcentajeUsuario1Final.toDouble(),
+                                        porcentajeUsuario2 = porcentajeUsuario2Final.toDouble()
                                     )
                                 }
 
-                        resultado
-                            .onSuccess { gasto ->
-                                mensaje = "Gasto guardado — cada uno paga ${gasto.importeUsuario1}$simboloDivisa"
-                                titulo = ""
-                                cantidad = ""
-                                comentario = ""
-                                fechaGasto = formatearFecha(Calendar.getInstance())
-                                idCategoriaSeleccionada = 4
-                                activity.setResult(Activity.RESULT_OK)
-                                activity.finish()
-                            }
-                            .onFailure {
-                                mensaje = "No se pudo guardar el gasto"
-                            }
+                                resultado
+                                    .onSuccess { gasto ->
+                                        val miImporte = if (rolYo == "USUARIO_1") {
+                                            gasto.importeUsuario1
+                                        } else {
+                                            gasto.importeUsuario2
+                                        }
+
+                                        mensaje = "Gasto guardado — tu parte es ${"%.2f".format(miImporte)}$simboloDivisa"
+                                        titulo = ""
+                                        cantidad = ""
+                                        comentario = ""
+                                        fechaGasto = formatearFecha(Calendar.getInstance())
+                                        idCategoriaSeleccionada = 4
+
+                                        if (rolYo == "USUARIO_1") {
+                                            porcentajeYoTexto = porcentajeUsuario1Default.toString()
+                                            porcentajeOtroTexto = porcentajeUsuario2Default.toString()
+                                        } else {
+                                            porcentajeYoTexto = porcentajeUsuario2Default.toString()
+                                            porcentajeOtroTexto = porcentajeUsuario1Default.toString()
+                                        }
+
+                                        activity.setResult(Activity.RESULT_OK)
+                                        activity.finish()
+                                    }
+                                    .onFailure {
+                                        mensaje = "No se pudo guardar el gasto"
+                                    }
 
                                 cargando = false
                             }

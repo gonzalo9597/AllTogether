@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -45,6 +46,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +60,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.alltogether.network.AllTogetherService
@@ -113,6 +116,14 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
         mutableStateOf(prefs.obtenerImagenPersonalizadaPareja(idPareja))
     }
 
+    var rolActual by remember { mutableStateOf("USUARIO_1") }
+    var nombreYo by remember { mutableStateOf("Tú") }
+    var nombreOtro by remember { mutableStateOf("Tu pareja") }
+
+    var porcentajeYo by remember { mutableStateOf("50") }
+    var porcentajeOtro by remember { mutableStateOf("50") }
+    var mensajeReparto by remember { mutableStateOf("") }
+
     val selectorLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -133,6 +144,29 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
 
     val service = remember { AllTogetherService() }
     val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(idPareja) {
+        val porcentajeUsuario1Guardado = prefs.obtenerPorcentajeUsuario1RepartoDefault(idPareja)
+        val porcentajeUsuario2Guardado = prefs.obtenerPorcentajeUsuario2RepartoDefault(idPareja)
+
+        val resultadoBalance = withContext(Dispatchers.IO) {
+            service.getBalance(idPareja)
+        }
+
+        resultadoBalance.onSuccess { balance ->
+            rolActual = balance.rolUsuario
+            nombreYo = balance.nombreYo
+            nombreOtro = balance.nombreOtro
+        }
+
+        if (rolActual == "USUARIO_1") {
+            porcentajeYo = porcentajeUsuario1Guardado.toString()
+            porcentajeOtro = porcentajeUsuario2Guardado.toString()
+        } else {
+            porcentajeYo = porcentajeUsuario2Guardado.toString()
+            porcentajeOtro = porcentajeUsuario1Guardado.toString()
+        }
+    }
 
     Scaffold(
         containerColor = FondoPantalla,
@@ -269,6 +303,89 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                             .fillMaxWidth()
                             .padding(top = 20.dp)
                     )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = VerdeSuave.copy(alpha = 0.55f)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    Text(
+                        text = "Reparto por defecto",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    Text(
+                        text = "Este reparto se usará como valor inicial al crear gastos nuevos.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = porcentajeYo,
+                            onValueChange = { nuevoValor ->
+                                if (nuevoValor.isBlank()) {
+                                    porcentajeYo = ""
+                                    mensajeReparto = ""
+                                } else {
+                                    val valor = nuevoValor.toIntOrNull()
+                                    if (valor != null && valor in 0..100) {
+                                        porcentajeYo = valor.toString()
+                                        porcentajeOtro = (100 - valor).toString()
+                                        mensajeReparto = ""
+                                    }
+                                }
+                            },
+                            label = { Text(nombreYo) },
+                            suffix = { Text("%") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
+                        )
+
+                        OutlinedTextField(
+                            value = porcentajeOtro,
+                            onValueChange = { nuevoValor ->
+                                if (nuevoValor.isBlank()) {
+                                    porcentajeOtro = ""
+                                    mensajeReparto = ""
+                                } else {
+                                    val valor = nuevoValor.toIntOrNull()
+                                    if (valor != null && valor in 0..100) {
+                                        porcentajeOtro = valor.toString()
+                                        porcentajeYo = (100 - valor).toString()
+                                        mensajeReparto = ""
+                                    }
+                                }
+                            },
+                            label = { Text(nombreOtro) },
+                            suffix = { Text("%") },
+                            modifier = Modifier.weight(1f),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
+                        )
+                    }
+
+                    if (mensajeReparto.isNotBlank()) {
+                        Text(
+                            text = mensajeReparto,
+                            color = Color(0xFFFFCDD2),
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(18.dp))
 
@@ -469,7 +586,42 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
 
                     Button(
                         onClick = {
+                            val porcentajeYoInt = porcentajeYo.toIntOrNull()
+                            val porcentajeOtroInt = porcentajeOtro.toIntOrNull()
+
+                            if (porcentajeYoInt == null || porcentajeOtroInt == null) {
+                                mensajeReparto = "Introduce porcentajes válidos"
+                                return@Button
+                            }
+
+                            if (porcentajeYoInt !in 0..100 || porcentajeOtroInt !in 0..100) {
+                                mensajeReparto = "Los porcentajes deben estar entre 0 y 100"
+                                return@Button
+                            }
+
+                            if (porcentajeYoInt + porcentajeOtroInt != 100) {
+                                mensajeReparto = "Los dos porcentajes deben sumar 100"
+                                return@Button
+                            }
+
+                            val porcentajeUsuario1 = if (rolActual == "USUARIO_1") {
+                                porcentajeYoInt
+                            } else {
+                                porcentajeOtroInt
+                            }
+
+                            val porcentajeUsuario2 = if (rolActual == "USUARIO_1") {
+                                porcentajeOtroInt
+                            } else {
+                                porcentajeYoInt
+                            }
+
                             prefs.guardarNombreVisible(idPareja, nombreVisible)
+                            prefs.guardarRepartoPorDefecto(
+                                idPareja,
+                                porcentajeUsuario1,
+                                porcentajeUsuario2
+                            )
 
                             if (rutaImagenPersonalizada != null) {
                                 prefs.guardarImagenPersonalizadaPareja(

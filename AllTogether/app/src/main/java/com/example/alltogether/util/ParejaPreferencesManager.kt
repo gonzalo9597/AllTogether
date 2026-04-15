@@ -83,4 +83,23 @@ class ParejaPreferencesManager(private val context: Context) {
             else -> R.drawable.corazon
         }
     }
+
+    fun guardarRepartoPorDefecto(
+        idPareja: Int,
+        porcentajeUsuario1: Int,
+        porcentajeUsuario2: Int
+    ) {
+        sharedPreferences.edit()
+            .putInt("reparto_default_usuario1_$idPareja", porcentajeUsuario1)
+            .putInt("reparto_default_usuario2_$idPareja", porcentajeUsuario2)
+            .apply()
+    }
+
+    fun obtenerPorcentajeUsuario1RepartoDefault(idPareja: Int): Int {
+        return sharedPreferences.getInt("reparto_default_usuario1_$idPareja", 50)
+    }
+
+    fun obtenerPorcentajeUsuario2RepartoDefault(idPareja: Int): Int {
+        return sharedPreferences.getInt("reparto_default_usuario2_$idPareja", 50)
+    }
 }
