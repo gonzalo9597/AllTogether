@@ -4,5 +4,8 @@ object ScreenUiState {
     var mostrarCardInfoRegister: Boolean = true
     var mostrarCardInfoSettings = true
     var mostrarCardInfoAddCouple = true
-
+    var mostrarCardInfoCoupleSettings = true
+    var mostrarCardInfoAddExpense = true
+    var mostrarCardInfoAddRecurringExpense = true
+    var mostrarCardInfoRecurringExpenses = true
 }

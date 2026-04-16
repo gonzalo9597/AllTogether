@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,8 +44,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,6 +71,7 @@ import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.selectoricono.SelectorIconoParejaActivity
 import com.example.alltogether.ui.theme.AllTogetherTheme
 import com.example.alltogether.util.ParejaPreferencesManager
+import com.example.alltogether.util.ScreenUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -124,6 +129,9 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
     var porcentajeOtro by remember { mutableStateOf("50") }
     var mensajeReparto by remember { mutableStateOf("") }
 
+    var mostrarCardInfo by remember { mutableStateOf(ScreenUiState.mostrarCardInfoCoupleSettings) }
+    val dismissState = rememberSwipeToDismissBoxState()
+
     val selectorLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -165,6 +173,13 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
         } else {
             porcentajeYo = porcentajeUsuario2Guardado.toString()
             porcentajeOtro = porcentajeUsuario1Guardado.toString()
+        }
+    }
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+            mostrarCardInfo = false
+            ScreenUiState.mostrarCardInfoCoupleSettings = false
         }
     }
 
@@ -219,28 +234,38 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = VerdeSuave),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Text(
-                        text = "Personaliza tu pareja",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    )
+            AnimatedVisibility(visible = mostrarCardInfo) {
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = true,
+                    enableDismissFromEndToStart = true,
+                    backgroundContent = {},
+                    content = {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(containerColor = VerdeSuave),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(18.dp)) {
+                                Text(
+                                    text = "Personaliza tu pareja",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Black
+                                )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
 
-                    Text(
-                        text = "Cambia el icono, el nombre visible, comparte el código y gestiona tu pareja desde un solo sitio.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black
-                    )
-                }
+                                Text(
+                                    text = "Cambia el icono y el nombre visible, ajusta el reparto por defecto, genera un código de invitación, consulta los gastos recurrentes y gestiona tu pareja desde un solo sitio",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Black
+                                )
+                            }
+                        }
+                    }
+                )
             }
 
             Card(
@@ -323,9 +348,9 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Este reparto se usará como valor inicial al crear gastos nuevos.",
+                        text = "Este reparto se usará como valor inicial al crear gastos nuevos",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White
+                        color = Color.Black
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -382,7 +407,7 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                     if (mensajeReparto.isNotBlank()) {
                         Text(
                             text = mensajeReparto,
-                            color = Color(0xFFFFCDD2),
+                            color = Color.Black,
                             modifier = Modifier.padding(top = 8.dp)
                         )
                     }
@@ -439,13 +464,13 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                         Text(
                             text = "Código: $codigoInvitacion",
                             style = MaterialTheme.typography.headlineSmall,
-                            color = Color.White,
+                            color = Color.Black,
                             modifier = Modifier.padding(top = 12.dp)
                         )
                         Text(
                             text = "Comparte este código con tu pareja para que se una",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.White,
+                            color = Color.Black,
                             modifier = Modifier.padding(top = 4.dp)
                         )
                     }
@@ -516,9 +541,9 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                         }
                     } else {
                         Text(
-                            text = "¿Estás seguro? Esta acción no se puede deshacer.",
+                            text = "¿Estás seguro? Esta acción no se puede deshacer",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White,
+                            color = Color.Black,
                             modifier = Modifier.padding(top = 8.dp)
                         )
 

@@ -20,6 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,7 +49,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -76,10 +77,9 @@ val FondoPantalla = Color.Black
 val VerdePrincipal = Color(0xFF2DBC94)
 val VerdeSuave = Color(0xFFA6E6DB)
 val RojoPeligro = Color(0xFFC62828)
-val AmarilloMedio = Color(0xFFF5A623)
-val RojoSuave = Color(0xFFE57373)
-class DashboardActivity : ComponentActivity() {
+val GrisPagado = Color(0xFF4A4A4A)
 
+class DashboardActivity : ComponentActivity() {
 
     private var idPareja: Int = -1
     private var nombreParejaOriginal: String = "Pareja"
@@ -320,8 +320,6 @@ fun PantallaDashboard(
             kotlin.math.abs(deudaNeta) <= 0.009 &&
             resumen.pendienteGeneralYo <= 0.009 &&
             resumen.pendienteGeneralOtro <= 0.009
-
-
 
     Scaffold(
         containerColor = FondoPantalla,
@@ -714,11 +712,11 @@ fun PantallaDashboard(
                     }
 
                     items(gastosDelDia, key = { it.idGasto }) { gasto ->
-                        if (gasto.tipoGasto == "FIJO") {
+                        if (esGastoRecurrente(gasto)) {
                             GastoFijoCard(
                                 gasto = gasto,
                                 rolUsuario = rolActual,
-                                onClick = { onOpenExpenseDetail(gasto, rolActual)},
+                                onClick = { onOpenExpenseDetail(gasto, rolActual) },
                                 simboloDivisa = simboloDivisa,
                                 currencyManager = currencyManager
                             )
@@ -747,49 +745,8 @@ fun GastoResumenCard(
     onClick: () -> Unit
 ) {
     val colorTarjeta = colorTarjetaGasto(gasto, rolUsuario)
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = colorTarjeta
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = gasto.tituloGasto,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-            Text(
-                text = "${"%.2f".format(currencyManager.convertir(gasto.cantidadTotal))}$simboloDivisa",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-        }
-    }
-}
+    val esRecurrente = esGastoRecurrente(gasto)
 
-@Composable
-fun GastoFijoCard(
-    gasto: Gasto,
-    rolUsuario: String,
-    simboloDivisa: String,
-    currencyManager: CurrencyPreferencesManager,
-    onClick: () -> Unit
-) {
-    val yoPague = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario1 else gasto.pagadoUsuario2
-    val otroPago = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario2 else gasto.pagadoUsuario1
-    val colorTarjeta = colorTarjetaGasto(gasto, rolUsuario)
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -809,12 +766,85 @@ fun GastoFijoCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = gasto.tituloGasto,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+
+                    if (esRecurrente) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        BadgeRecurrente()
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
                 Text(
-                    text = gasto.tituloGasto,
+                    text = "${"%.2f".format(currencyManager.convertir(gasto.cantidadTotal))}$simboloDivisa",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun GastoFijoCard(
+    gasto: Gasto,
+    rolUsuario: String,
+    simboloDivisa: String,
+    currencyManager: CurrencyPreferencesManager,
+    onClick: () -> Unit
+) {
+    val yoPague = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario1 else gasto.pagadoUsuario2
+    val otroPago = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario2 else gasto.pagadoUsuario1
+    val colorTarjeta = colorTarjetaGasto(gasto, rolUsuario)
+    val esRecurrente = esGastoRecurrente(gasto)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() },
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = colorTarjeta
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = gasto.tituloGasto,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+
+                    if (esRecurrente) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        BadgeRecurrente()
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
                 Text(
                     text = "${"%.2f".format(currencyManager.convertir(gasto.cantidadTotal))}$simboloDivisa",
                     style = MaterialTheme.typography.titleMedium,
@@ -827,7 +857,7 @@ fun GastoFijoCard(
                 text = "Categoría: ${gasto.nombreCategoria}",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color.White,
-                modifier = Modifier.padding(top = 4.dp)
+                modifier = Modifier.padding(top = 8.dp)
             )
 
             if (gasto.importeUsuario1 != null && gasto.importeUsuario2 != null) {
@@ -872,12 +902,42 @@ fun GastoFijoCard(
         }
     }
 }
-fun colorTarjetaGasto(gasto: Gasto, rolUsuario: String): Color {
-    if (!gasto.esPendiente) return VerdePrincipal  // ✅ Saldado — verde
 
+@Composable
+fun BadgeRecurrente() {
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = VerdeSuave
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Text(
+            text = "Recurrente",
+            color = Color.Black,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
+        )
+    }
+}
+
+fun esGastoRecurrente(gasto: Gasto): Boolean {
+    val tipo = gasto.tipoGasto.trim().uppercase()
+
+    return tipo == "FIJO" ||
+            tipo == "RECURRENTE" ||
+            tipo.contains("FIJO") ||
+            tipo.contains("RECURRENTE")
+}
+
+fun colorTarjetaGasto(gasto: Gasto, rolUsuario: String): Color {
     val yoPague = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario1 else gasto.pagadoUsuario2
     val otroPago = if (rolUsuario == "USUARIO_1") gasto.pagadoUsuario2 else gasto.pagadoUsuario1
 
-    return if (yoPague xor otroPago) AmarilloMedio  // 🟡 Medio pagado — amarillo
-    else RojoSuave                                   // 🔴 Nadie ha pagado — rojo
+    return if (yoPague && otroPago) {
+        GrisPagado
+    } else {
+        VerdePrincipal
+    }
 }

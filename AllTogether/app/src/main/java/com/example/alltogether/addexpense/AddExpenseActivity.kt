@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +26,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -42,8 +43,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -64,6 +68,7 @@ import com.example.alltogether.network.AllTogetherService
 import com.example.alltogether.ui.theme.AllTogetherTheme
 import com.example.alltogether.util.CurrencyPreferencesManager
 import com.example.alltogether.util.ParejaPreferencesManager
+import com.example.alltogether.util.ScreenUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -104,7 +109,7 @@ fun PantallaAddExpense(idPareja: Int) {
     val coroutineScope = rememberCoroutineScope()
     val parejaPrefs = remember { ParejaPreferencesManager(context) }
     val currencyManager = remember { CurrencyPreferencesManager(context) }
-    val simboloDivisa = remember { currencyManager.obtenerSimbolo() }
+    val simboloDivisa = currencyManager.obtenerSimbolo()
 
     var titulo by remember { mutableStateOf("") }
     var cantidad by remember { mutableStateOf("") }
@@ -140,6 +145,16 @@ fun PantallaAddExpense(idPareja: Int) {
 
     val calendario = remember { Calendar.getInstance() }
     var fechaGasto by remember { mutableStateOf(formatearFecha(calendario)) }
+
+    var mostrarCardInfo by remember { mutableStateOf(ScreenUiState.mostrarCardInfoAddExpense) }
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+            mostrarCardInfo = false
+            ScreenUiState.mostrarCardInfoAddExpense = false
+        }
+    }
 
     LaunchedEffect(idPareja) {
         val resultado = withContext(Dispatchers.IO) {
@@ -190,7 +205,7 @@ fun PantallaAddExpense(idPareja: Int) {
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Filled.AccountBalanceWallet,
+                            imageVector = Icons.Filled.MonetizationOn,
                             contentDescription = "Añadir gasto",
                             tint = Color.White
                         )
@@ -224,32 +239,42 @@ fun PantallaAddExpense(idPareja: Int) {
                 .padding(horizontal = 16.dp, vertical = 18.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = VerdeSuave),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 18.dp)
-                ) {
-                    Text(
-                        text = "Registra un nuevo gasto",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = GrisTexto
-                    )
+            AnimatedVisibility(visible = mostrarCardInfo) {
+                SwipeToDismissBox(
+                    state = dismissState,
+                    enableDismissFromStartToEnd = true,
+                    enableDismissFromEndToStart = true,
+                    backgroundContent = {},
+                    content = {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(24.dp),
+                            colors = CardDefaults.cardColors(containerColor = VerdeSuave),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 20.dp, vertical = 18.dp)
+                            ) {
+                                Text(
+                                    text = "Registra un nuevo gasto",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GrisTexto
+                                )
 
-                    Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(6.dp))
 
-                    Text(
-                        text = "Añade el importe, quién lo pagó, la categoría, la fecha y el reparto del gasto.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = GrisTexto
-                    )
-                }
+                                Text(
+                                    text = "Añade el importe, quién lo pagó, la categoría, la fecha y el reparto del gasto",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = GrisTexto
+                                )
+                            }
+                        }
+                    }
+                )
             }
 
             Card(
