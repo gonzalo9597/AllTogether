@@ -6,8 +6,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
@@ -66,7 +67,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private val FondoPantalla = Color.Black
 private val VerdePrincipal = Color(0xFF2DBC94)
 private val VerdeSuave = Color(0xFFA6E6DB)
 
@@ -128,246 +128,224 @@ fun PantallaLogin() {
         }
     }
 
-    Scaffold(
-        containerColor = FondoPantalla,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "Logo AllTogether",
-                        modifier = Modifier.size(width = 210.dp, height = 74.dp)
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = VerdePrincipal
-                )
-            )
-        },
-        bottomBar = {
-            PieInicio()
-        }
-    ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(FondoPantalla)
-                .padding(innerPadding)
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = VerdePrincipal
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(18.dp)
-                ) {
-                    Text(
-                        text = "AllTogether",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFamily = FontFamily.Serif,
-                        color = Color.White
-                    )
+    Box(modifier = Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.fondologo),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
 
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    if (sesionCaducada) {
-                        Text(
-                            text = "Tu sesión ha caducado. Por favor inicia sesión de nuevo.",
-                            color = Color.White,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(bottom = 10.dp)
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo),
+                            contentDescription = "Logo AllTogether",
+                            modifier = Modifier.size(width = 210.dp, height = 74.dp)
                         )
-                    }
-
-                    OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
-                        label = { Text("Email", color = Color.Black.copy(alpha = 0.85f)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
-                        singleLine = true
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = VerdePrincipal
                     )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Contraseña", color = Color.Black.copy(alpha = 0.85f)) },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
-                        singleLine = true
-                    )
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    HorizontalDivider(
-                        thickness = 1.dp,
-                        color = VerdeSuave.copy(alpha = 0.55f)
-                    )
-
-                    Spacer(modifier = Modifier.height(18.dp))
-
-                    Button(
-                        onClick = {
-                            if (email.isBlank() || password.isBlank()) {
-                                error = "Introduce email y contraseña"
-                                return@Button
-                            }
-                            cargando = true
-                            error = ""
-                            coroutineScope.launch {
-                                val resultado = withContext(Dispatchers.IO) {
-                                    service.login(email, password)
-                                }
-                                resultado
-                                    .onSuccess { navegarAParejas(it) }
-                                    .onFailure {
-                                        error = "Email o contraseña incorrectos"
-                                        cargando = false
-                                    }
-                            }
-                        },
-                        enabled = !cargando && !cargandoGoogle,  // 👈 cambio 1
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = VerdeSuave,
-                            contentColor = Color.Black
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
+                )
+            }
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 18.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = VerdePrincipal
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(18.dp)
                     ) {
-                        if (cargando) {
-                            CircularProgressIndicator(
-                                color = Color.Black,
-                                strokeWidth = 2.5.dp
-                            )
-                        } else {
+                        Text(
+                            text = "AllTogether",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontFamily = FontFamily.Serif,
+                            color = Color.White
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        if (sesionCaducada) {
                             Text(
-                                text = "Iniciar sesión",
-                                fontWeight = FontWeight.SemiBold
+                                text = "Tu sesión ha caducado. Por favor inicia sesión de nuevo.",
+                                color = Color.White,
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(bottom = 10.dp)
                             )
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("Email", color = Color.Black.copy(alpha = 0.85f)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                            singleLine = true
+                        )
 
-                    Text(
-                        text = "o",
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Contraseña", color = Color.Black.copy(alpha = 0.85f)) },
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(16.dp),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                            singleLine = true
+                        )
 
-                    Button(
-                        onClick = {
-                            context.startActivity(Intent(context, RegisterActivity::class.java))
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = VerdeSuave,
-                            contentColor = Color.Black
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Crear cuenta")
-                    }
+                        Spacer(modifier = Modifier.height(18.dp))
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(
+                            thickness = 1.dp,
+                            color = VerdeSuave.copy(alpha = 0.55f)
+                        )
 
-                    // 👈 cambio 2 — botón Google
-                    Button(
-                        onClick = {
-                            cargandoGoogle = true
-                            error = ""
-                            coroutineScope.launch {
-                                val idToken = googleAuthHelper.signIn()
-                                if (idToken != null) {
+                        Spacer(modifier = Modifier.height(18.dp))
+
+                        Button(
+                            onClick = {
+                                if (email.isBlank() || password.isBlank()) {
+                                    error = "Introduce email y contraseña"
+                                    return@Button
+                                }
+                                cargando = true
+                                error = ""
+                                coroutineScope.launch {
                                     val resultado = withContext(Dispatchers.IO) {
-                                        service.loginGoogle(idToken)
+                                        service.login(email, password)
                                     }
                                     resultado
                                         .onSuccess { navegarAParejas(it) }
                                         .onFailure {
-                                            error = "Error al iniciar sesión con Google"
-                                            cargandoGoogle = false
+                                            error = "Email o contraseña incorrectos"
+                                            cargando = false
                                         }
-                                } else {
-                                    error = "No se pudo obtener el token de Google"
-                                    cargandoGoogle = false
                                 }
-                            }
-                        },
-                        enabled = !cargando && !cargandoGoogle,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            contentColor = Color.Black
-                        ),
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (cargandoGoogle) {
-                            CircularProgressIndicator(color = Color.Black, strokeWidth = 2.5.dp)
-                        } else {
-                            Text("Continuar con Google", fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-
-                    if (error.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            text = error,
-                            color = Color.Black,
+                            },
+                            enabled = !cargando && !cargandoGoogle,  // 👈 cambio 1
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = VerdeSuave,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (cargando) {
+                                CircularProgressIndicator(
+                                    color = Color.Black,
+                                    strokeWidth = 2.5.dp
+                                )
+                            } else {
+                                Text(
+                                    text = "Iniciar sesión",
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // 👈 cambio 2 — botón Google
+                        Button(
+                            onClick = {
+                                cargandoGoogle = true
+                                error = ""
+                                coroutineScope.launch {
+                                    val idToken = googleAuthHelper.signIn()
+                                    if (idToken != null) {
+                                        val resultado = withContext(Dispatchers.IO) {
+                                            service.loginGoogle(idToken)
+                                        }
+                                        resultado
+                                            .onSuccess { navegarAParejas(it) }
+                                            .onFailure {
+                                                error = "Error al iniciar sesión con Google"
+                                                cargandoGoogle = false
+                                            }
+                                    } else {
+                                        error = "No se pudo obtener el token de Google"
+                                        cargandoGoogle = false
+                                    }
+                                }
+                            },
+                            enabled = !cargando && !cargandoGoogle,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = VerdeSuave,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (cargandoGoogle) {
+                                CircularProgressIndicator(color = Color.Black, strokeWidth = 2.5.dp)
+                            } else {
+                                Text("Continuar con Google", fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Text(
+                            text = "o",
+                            color = Color.White,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
                         )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        Button(
+                            onClick = {
+                                context.startActivity(Intent(context, RegisterActivity::class.java))
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = VerdeSuave,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Crear cuenta")
+                        }
+
+                        if (error.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = error,
+                                color = Color.Black,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun PieInicio() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(top = 8.dp, bottom = 34.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Proyecto Intermodular de DAM · AllTogether",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White
-        )
-        Text(
-            text = "Sergio Malón, Sergio Sanz, Gonzalo Sebastián · v1.0.0",
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White
-        )
-        Text(
-            text = "2025-2026",
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White
-        )
     }
 }

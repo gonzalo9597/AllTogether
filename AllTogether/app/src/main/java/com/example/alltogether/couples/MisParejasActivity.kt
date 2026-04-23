@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -187,88 +186,94 @@ fun PantallaMisParejas(
 ) {
     val titulo = if (parejas.size == 1) "Mi pareja" else "Mis parejas"
 
-    Scaffold(
-        containerColor = FondoPantalla,
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Image(
-                        painter = painterResource(id = R.drawable.logo),
-                        contentDescription = "Logo AllTogether",
-                        modifier = Modifier.size(width = 210.dp, height = 74.dp)
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = VerdePrincipal
-                ),
-                actions = {
-                    IconButton(
-                        onClick = onOpenSettings,
-                        modifier = Modifier.padding(end = 12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Settings,
-                            contentDescription = "Ajustes",
-                            modifier = Modifier.size(28.dp),
-                            tint = Color.White
-                        )
-                    }
-                }
-            )
-        },
-        bottomBar = {
-            PieInicio()
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(FondoPantalla)
-                .padding(innerPadding)
-                .padding(start = 16.dp, end = 16.dp, top = 34.dp, bottom = 18.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(34.dp)
-        ) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = VerdeSuave
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
-                ) {
-                    Text(
-                        text = titulo,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1F1F1F),
-                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)
-                    )
-                }
-            }
+    Box(modifier = Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = R.drawable.fondologo),
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
 
-            items(parejas) { pareja ->
-                ParejaCard(
-                    nombrePareja = pareja.nombreVisible,
-                    iconoResId = pareja.iconoResId,
-                    rutaImagenPersonalizada = pareja.rutaImagenPersonalizada,
-                    onClick = {
-                        onOpenDashboard(
-                            pareja.idPareja,
-                            pareja.nombreParejaOriginal
+        Scaffold(
+            containerColor = Color.Transparent,
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Image(
+                            painter = painterResource(id = R.drawable.logo),
+                            contentDescription = "Logo AllTogether",
+                            modifier = Modifier.size(width = 210.dp, height = 74.dp)
                         )
                     },
-                    onIconClick = {
-                        onOpenIconSelector(pareja.idPareja)
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = VerdePrincipal
+                    ),
+                    actions = {
+                        IconButton(
+                            onClick = onOpenSettings,
+                            modifier = Modifier.padding(end = 12.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Settings,
+                                contentDescription = "Ajustes",
+                                modifier = Modifier.size(28.dp),
+                                tint = Color.White
+                            )
+                        }
                     }
                 )
             }
+        ) { innerPadding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Transparent)
+                    .padding(innerPadding)
+                    .padding(start = 16.dp, end = 16.dp, top = 34.dp, bottom = 18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(34.dp)
+            ) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = VerdeSuave
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+                    ) {
+                        Text(
+                            text = titulo,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1F1F1F),
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)
+                        )
+                    }
+                }
 
-            item {
-                BotonAnadirPareja(
-                    onClick = onOpenAddCouple
-                )
+                items(parejas) { pareja ->
+                    ParejaCard(
+                        nombrePareja = pareja.nombreVisible,
+                        iconoResId = pareja.iconoResId,
+                        rutaImagenPersonalizada = pareja.rutaImagenPersonalizada,
+                        onClick = {
+                            onOpenDashboard(
+                                pareja.idPareja,
+                                pareja.nombreParejaOriginal
+                            )
+                        },
+                        onIconClick = {
+                            onOpenIconSelector(pareja.idPareja)
+                        }
+                    )
+                }
+
+                item {
+                    BotonAnadirPareja(
+                        onClick = onOpenAddCouple
+                    )
+                }
             }
         }
     }
@@ -411,32 +416,5 @@ fun BotonAnadirPareja(
                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
             )
         }
-    }
-}
-
-@Composable
-fun PieInicio() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(top = 8.dp, bottom = 34.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Proyecto Intermodular de DAM · AllTogether",
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White
-        )
-        Text(
-            text = "Sergio Malón, Sergio Sanz, Gonzalo Sebastián · v1.0.0",
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White
-        )
-        Text(
-            text = "2025-2026",
-            style = MaterialTheme.typography.labelSmall,
-            color = Color.White
-        )
     }
 }

@@ -77,10 +77,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 
-private val FondoPantalla = Color.Black
+private val FondoPantalla = Color(0xFF383A39)
 private val VerdePrincipal = Color(0xFF2DBC94)
 private val VerdeSuave = Color(0xFFA6E6DB)
-private val RojoPeligro = Color(0xFFC62828)
+private val RojoPeligro = Color(0xFFEF5350)
 
 class CoupleSettingsActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -519,7 +519,7 @@ fun PantallaCoupleSettings(idPareja: Int, nombrePareja: String) {
                     Spacer(modifier = Modifier.height(18.dp))
 
                     Text(
-                        text = "Zona de peligro",
+                        text = "Pareja",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color.White

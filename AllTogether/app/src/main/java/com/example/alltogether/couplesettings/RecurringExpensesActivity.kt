@@ -64,7 +64,7 @@ import com.example.alltogether.util.ScreenUiState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private val FondoPantalla = Color.Black
+private val FondoPantalla = Color(0xFF383A39)
 private val VerdePrincipal = Color(0xFF2DBC94)
 private val VerdeSuave = Color(0xFFA6E6DB)
 private val GrisTexto = Color(0xFF1F1F1F)
@@ -275,7 +275,18 @@ fun RecurrenteCard(
                 color = Color.White
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            val importeTexto = obtenerImporteRecurrente(recurrente)
+
+            if (importeTexto != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = "$importeTexto$simboloDivisa",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -296,17 +307,6 @@ fun RecurrenteCard(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
-            }
-
-            val importeTexto = obtenerImporteRecurrente(recurrente)
-
-            if (importeTexto != null) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = "$importeTexto$simboloDivisa",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White
-                )
             }
         }
     }

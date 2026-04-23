@@ -50,7 +50,7 @@ import com.example.alltogether.ui.theme.AllTogetherTheme
 import java.io.File
 import java.io.FileOutputStream
 
-private val FondoPantalla = Color.Black
+private val FondoPantalla = Color(0xFF383A39)
 private val VerdePrincipal = Color(0xFF2DBC94)
 private val VerdeSuave = Color(0xFFA6E6DB)
 

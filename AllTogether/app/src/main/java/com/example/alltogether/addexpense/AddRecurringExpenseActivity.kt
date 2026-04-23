@@ -72,7 +72,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private val FondoPantalla = Color.Black
+private val FondoPantalla = Color(0xFF383A39)
 private val VerdePrincipal = Color(0xFF2DBC94)
 private val VerdeSuave = Color(0xFFA6E6DB)
 private val GrisTexto = Color(0xFF1F1F1F)

@@ -73,8 +73,10 @@ import androidx.compose.ui.text.style.TextAlign
 import com.example.alltogether.util.CurrencyPreferencesManager
 import androidx.compose.ui.Alignment
 
-val FondoPantalla = Color.Black
+val FondoPantalla = Color(0xFF383A39)
+
 val VerdePrincipal = Color(0xFF2DBC94)
+
 val VerdeSuave = Color(0xFFA6E6DB)
 val RojoPeligro = Color(0xFFC62828)
 val GrisPagado = Color(0xFF4A4A4A)
@@ -764,23 +766,16 @@ fun GastoResumenCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                Column(
+                Text(
+                    text = gasto.tituloGasto,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
                     modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = gasto.tituloGasto,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-
-                    if (esRecurrente) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        BadgeRecurrente()
-                    }
-                }
+                )
 
                 Spacer(modifier = Modifier.width(12.dp))
 
@@ -790,6 +785,16 @@ fun GastoResumenCard(
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
+            }
+
+            if (esRecurrente) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    BadgeRecurrente()
+                }
             }
         }
     }
@@ -825,23 +830,16 @@ fun GastoFijoCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                Column(
+                Text(
+                    text = gasto.tituloGasto,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
                     modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = gasto.tituloGasto,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-
-                    if (esRecurrente) {
-                        Spacer(modifier = Modifier.height(6.dp))
-                        BadgeRecurrente()
-                    }
-                }
+                )
 
                 Spacer(modifier = Modifier.width(12.dp))
 
@@ -898,6 +896,16 @@ fun GastoFijoCard(
                     color = Color.White,
                     modifier = Modifier.padding(top = 4.dp)
                 )
+            }
+
+            if (esRecurrente) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    BadgeRecurrente()
+                }
             }
         }
     }
