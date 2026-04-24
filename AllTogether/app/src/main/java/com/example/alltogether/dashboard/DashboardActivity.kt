@@ -78,7 +78,7 @@ val FondoPantalla = Color(0xFF383A39)
 val VerdePrincipal = Color(0xFF2DBC94)
 
 val VerdeSuave = Color(0xFFA6E6DB)
-val RojoPeligro = Color(0xFFC62828)
+val RojoPeligro = Color(0xFFEF5350)
 val GrisPagado = Color(0xFF4A4A4A)
 
 class DashboardActivity : ComponentActivity() {

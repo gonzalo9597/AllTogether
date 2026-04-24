@@ -48,7 +48,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -171,7 +170,7 @@ data class ParejaVisual(
     val rutaImagenPersonalizada: String? = null
 )
 
-private val FondoPantalla = Color.Black
+private val FondoPantalla = Color(0xFF383A39)
 private val VerdePrincipal = Color(0xFF2DBC94)
 private val VerdeSuave = Color(0xFFA6E6DB)
 
@@ -186,16 +185,13 @@ fun PantallaMisParejas(
 ) {
     val titulo = if (parejas.size == 1) "Mi pareja" else "Mis parejas"
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(id = R.drawable.fondologo),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
-
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(FondoPantalla)
+    ) {
         Scaffold(
-            containerColor = Color.Transparent,
+            containerColor = FondoPantalla,
             topBar = {
                 CenterAlignedTopAppBar(
                     title = {
@@ -227,7 +223,7 @@ fun PantallaMisParejas(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Transparent)
+                    .background(FondoPantalla)
                     .padding(innerPadding)
                     .padding(start = 16.dp, end = 16.dp, top = 34.dp, bottom = 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -362,8 +358,7 @@ fun ImagenParejaGuardadaMini(
         Image(
             bitmap = bitmap.asImageBitmap(),
             contentDescription = contentDescription,
-            modifier = modifier,
-            contentScale = ContentScale.Crop
+            modifier = modifier
         )
     } else {
         Image(

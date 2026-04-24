@@ -6,37 +6,58 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MonetizationOn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.alltogether.TopAppBarWithBack
+import androidx.compose.ui.unit.sp
 import com.example.alltogether.dashboard.RojoPeligro
 import com.example.alltogether.dashboard.VerdePrincipal
 import com.example.alltogether.dashboard.VerdeSuave
@@ -47,6 +68,8 @@ import com.example.alltogether.util.CurrencyPreferencesManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+
+private val FondoPantalla = Color(0xFF383A39)
 
 class ExpenseDetailActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,6 +106,7 @@ class ExpenseDetailActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PantallaDetalleGasto(
     gasto: Gasto,
@@ -146,99 +170,154 @@ fun PantallaDetalleGasto(
     }
 
     Scaffold(
+        containerColor = FondoPantalla,
         topBar = {
-            TopAppBarWithBack(
-                title = "Detalle del gasto",
-                onBackClick = onBack
+            CenterAlignedTopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = Color.White
+                        )
+                    }
+                },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.MonetizationOn,
+                            contentDescription = "Detalle del gasto",
+                            tint = Color.White
+                        )
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Text(
+                            text = "Detalle del gasto",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontFamily = FontFamily.Serif,
+                            color = Color.White
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = VerdePrincipal
+                )
             )
         }
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(FondoPantalla)
                 .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = VerdeSuave)
+                colors = CardDefaults.cardColors(containerColor = VerdePrincipal),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(18.dp)) {
                     Text(
                         text = gasto.tituloGasto,
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        fontFamily = FontFamily.Serif,
+                        color = Color.White
                     )
+
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
                         text = "${"%.2f".format(currencyManager.convertir(gasto.cantidadTotal))}$simboloDivisa",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black,
-                        modifier = Modifier.padding(top = 8.dp)
+                        color = Color.White
                     )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = VerdeSuave.copy(alpha = 0.55f)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
 
                     Text(
                         text = "Fecha: ${gasto.fechaGasto}",
-                        modifier = Modifier.padding(top = 8.dp),
-                        color = Color.Black
+                        color = Color.White
                     )
 
                     Text(
                         text = "Categoría: ${gasto.nombreCategoria}",
-                        modifier = Modifier.padding(top = 4.dp),
-                        color = Color.Black
+                        modifier = Modifier.padding(top = 6.dp),
+                        color = Color.White
                     )
 
                     Text(
                         text = "Modo reparto: ${gasto.modoReparto}",
-                        modifier = Modifier.padding(top = 4.dp),
-                        color = Color.Black
+                        modifier = Modifier.padding(top = 6.dp),
+                        color = Color.White
                     )
 
                     if (importeYo != null && importeOtro != null) {
                         Text(
                             text = "Reparto: tú ${"%.2f".format(currencyManager.convertir(importeYo))}$simboloDivisa / tu pareja ${"%.2f".format(currencyManager.convertir(importeOtro))}$simboloDivisa",
-                            modifier = Modifier.padding(top = 4.dp),
-                            color = Color.Black
+                            modifier = Modifier.padding(top = 6.dp),
+                            color = Color.White
                         )
                     }
 
                     if (porcentajeYo != null && porcentajeOtro != null) {
                         Text(
                             text = "Porcentajes: tú ${"%.0f".format(porcentajeYo)}% / tu pareja ${"%.0f".format(porcentajeOtro)}%",
-                            modifier = Modifier.padding(top = 4.dp),
-                            color = Color.Black
+                            modifier = Modifier.padding(top = 6.dp),
+                            color = Color.White
                         )
                     }
 
                     if (gasto.comentario.isNotBlank()) {
                         Text(
                             text = "Comentario: ${gasto.comentario}",
-                            modifier = Modifier.padding(top = 4.dp),
-                            color = Color.Black
+                            modifier = Modifier.padding(top = 6.dp),
+                            color = Color.White
                         )
                     }
 
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = VerdeSuave.copy(alpha = 0.55f)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
                     Text(
                         text = if (gasto.esPendiente) "Estado: Pendiente" else "Estado: Saldado",
-                        modifier = Modifier.padding(top = 8.dp),
-                        color = Color.Black
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
                     )
 
                     Text(
                         text = if (yoPague) "✅ Tú ya pagaste tu parte" else "⏳ Tú aún no has pagado",
                         modifier = Modifier.padding(top = 8.dp),
-                        color = Color.Black
+                        color = Color.White
                     )
 
                     Text(
                         text = if (otroPago) "✅ Tu pareja ya pagó su parte" else "⏳ Tu pareja aún no ha pagado",
                         modifier = Modifier.padding(top = 4.dp),
-                        color = Color.Black
+                        color = Color.White
                     )
                 }
             }
@@ -270,9 +349,15 @@ fun PantallaDetalleGasto(
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     if (cargando) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(
+                            color = Color.Black,
+                            strokeWidth = 2.5.dp
+                        )
                     } else {
-                        Text("Marcar mi parte como pagada")
+                        Text(
+                            text = "Marcar mi parte como pagada",
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }
@@ -304,9 +389,15 @@ fun PantallaDetalleGasto(
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     if (cargando) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(
+                            color = Color.Black,
+                            strokeWidth = 2.5.dp
+                        )
                     } else {
-                        Text("Marcar su parte como pagada")
+                        Text(
+                            text = "Marcar su parte como pagada",
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }
@@ -321,7 +412,10 @@ fun PantallaDetalleGasto(
                 ),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Editar")
+                Text(
+                    text = "Editar",
+                    fontWeight = FontWeight.SemiBold
+                )
             }
 
             Button(
@@ -349,13 +443,16 @@ fun PantallaDetalleGasto(
                 ),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Eliminar")
+                Text(
+                    text = "Eliminar",
+                    fontWeight = FontWeight.SemiBold
+                )
             }
 
             if (mensaje.isNotBlank()) {
                 Text(
                     text = mensaje,
-                    color = MaterialTheme.colorScheme.error
+                    color = Color.White
                 )
             }
         }
@@ -391,22 +488,24 @@ fun EditarGastoDialogDetalle(
 
     AlertDialog(
         onDismissRequest = onCancelar,
-        containerColor = VerdeSuave,
+        containerColor = VerdePrincipal,
         title = {
             Text(
-                "Editar gasto",
-                color = Color.Black,
-                fontWeight = FontWeight.Bold
+                text = "Editar gasto",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily.Serif
             )
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = titulo,
                     onValueChange = { titulo = it },
                     label = { Text("Título") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
+                    singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.Black,
                         unfocusedTextColor = Color.Black,
@@ -424,6 +523,7 @@ fun EditarGastoDialogDetalle(
                     label = { Text("Cantidad ($simboloDivisa)") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
+                    singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.Black,
@@ -453,59 +553,66 @@ fun EditarGastoDialogDetalle(
                     )
                 )
 
-                OutlinedTextField(
-                    value = porcentajeYoTexto,
-                    onValueChange = { nuevoValor ->
-                        val numero = nuevoValor.toIntOrNull()
-                        if (nuevoValor.isEmpty()) {
-                            porcentajeYoTexto = ""
-                            porcentajeOtroTexto = ""
-                        } else if (numero != null && numero in 0..100) {
-                            porcentajeYoTexto = numero.toString()
-                            porcentajeOtroTexto = (100 - numero).toString()
-                        }
-                    },
-                    label = { Text("Tu porcentaje") },
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
-                        focusedLabelColor = Color.Black,
-                        unfocusedLabelColor = Color.Black,
-                        focusedBorderColor = Color.Black,
-                        unfocusedBorderColor = Color.Black.copy(alpha = 0.65f),
-                        cursorColor = Color.Black
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = porcentajeYoTexto,
+                        onValueChange = { nuevoValor ->
+                            val numero = nuevoValor.toIntOrNull()
+                            if (nuevoValor.isEmpty()) {
+                                porcentajeYoTexto = ""
+                                porcentajeOtroTexto = ""
+                            } else if (numero != null && numero in 0..100) {
+                                porcentajeYoTexto = numero.toString()
+                                porcentajeOtroTexto = (100 - numero).toString()
+                            }
+                        },
+                        label = { Text("Tú (%)") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedLabelColor = Color.Black,
+                            unfocusedLabelColor = Color.Black,
+                            focusedBorderColor = Color.Black,
+                            unfocusedBorderColor = Color.Black.copy(alpha = 0.65f),
+                            cursorColor = Color.Black
+                        )
                     )
-                )
 
-                OutlinedTextField(
-                    value = porcentajeOtroTexto,
-                    onValueChange = { nuevoValor ->
-                        val numero = nuevoValor.toIntOrNull()
-                        if (nuevoValor.isEmpty()) {
-                            porcentajeYoTexto = ""
-                            porcentajeOtroTexto = ""
-                        } else if (numero != null && numero in 0..100) {
-                            porcentajeOtroTexto = numero.toString()
-                            porcentajeYoTexto = (100 - numero).toString()
-                        }
-                    },
-                    label = { Text("Porcentaje de tu pareja") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.Black,
-                        unfocusedTextColor = Color.Black,
-                        focusedLabelColor = Color.Black,
-                        unfocusedLabelColor = Color.Black,
-                        focusedBorderColor = Color.Black,
-                        unfocusedBorderColor = Color.Black.copy(alpha = 0.65f),
-                        cursorColor = Color.Black
+                    OutlinedTextField(
+                        value = porcentajeOtroTexto,
+                        onValueChange = { nuevoValor ->
+                            val numero = nuevoValor.toIntOrNull()
+                            if (nuevoValor.isEmpty()) {
+                                porcentajeYoTexto = ""
+                                porcentajeOtroTexto = ""
+                            } else if (numero != null && numero in 0..100) {
+                                porcentajeOtroTexto = numero.toString()
+                                porcentajeYoTexto = (100 - numero).toString()
+                            }
+                        },
+                        label = { Text("Pareja (%)") },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedLabelColor = Color.Black,
+                            unfocusedLabelColor = Color.Black,
+                            focusedBorderColor = Color.Black,
+                            unfocusedBorderColor = Color.Black.copy(alpha = 0.65f),
+                            cursorColor = Color.Black
+                        )
                     )
-                )
+                }
             }
         },
         confirmButton = {
@@ -556,20 +663,23 @@ fun EditarGastoDialogDetalle(
                     )
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = VerdePrincipal,
-                    contentColor = Color.White
+                    containerColor = VerdeSuave,
+                    contentColor = Color.Black
                 ),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Text("Guardar")
+                Text(
+                    text = "Guardar",
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         },
         dismissButton = {
             Button(
                 onClick = onCancelar,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.White
+                    containerColor = VerdeSuave,
+                    contentColor = Color.Black
                 ),
                 shape = RoundedCornerShape(16.dp)
             ) {
