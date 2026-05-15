@@ -1,5 +1,4 @@
 package com.example.alltogether.register
-
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -285,6 +284,11 @@ fun PantallaRegister() {
                             onClick = {
                                 if (nombre.isBlank() || email.isBlank() || password.isBlank()) {
                                     error = "Rellena todos los campos"
+                                    return@Button
+                                }
+
+                                if (password.length < 6) {
+                                    error = "La contraseña debe tener al menos 6 caracteres"
                                     return@Button
                                 }
 

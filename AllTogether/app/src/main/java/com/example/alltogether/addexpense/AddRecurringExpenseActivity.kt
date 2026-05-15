@@ -250,7 +250,7 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                                     .padding(horizontal = 20.dp, vertical = 18.dp)
                             ) {
                                 Text(
-                                    text = "Programa un gasto fijo",
+                                    text = "Programa un gasto recurrente.",
                                     style = MaterialTheme.typography.headlineSmall,
                                     fontWeight = FontWeight.Bold,
                                     color = GrisTexto
@@ -259,7 +259,7 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                                 Spacer(modifier = Modifier.height(6.dp))
 
                                 Text(
-                                    text = "Configura importe, categoría, frecuencia y reparto para crear un gasto recurrente",
+                                    text = "Configura importe, categoría, frecuencia y reparto para crear un gasto recurrente. Recuerda: Todos los días se comprueba si, segun la periodicidad establecida, es momento de registrar un gasto nuevo o no",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = GrisTexto
                                 )

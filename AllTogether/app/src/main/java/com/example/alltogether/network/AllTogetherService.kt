@@ -8,6 +8,7 @@ import kotlinx.serialization.Serializable
 import com.example.alltogether.model.GastoResponse
 import com.example.alltogether.model.Gasto
 import com.example.alltogether.model.GastoRecurrente
+import com.example.alltogether.model.GastosPaginados
 import io.ktor.client.statement.bodyAsText
 
 // Estructura de la respuesta que devuelve el servidor tras login/register
@@ -239,13 +240,15 @@ class AllTogetherService {
     }
     // Obtiene todos los gastos de una pareja ordenados por fecha
 // Se usa idPareja como query parameter en la URL: GET /gastos?idPareja=1
-    suspend fun getGastos(idPareja: Int): List<Gasto> {
+    suspend fun getGastos(idPareja: Int, limit: Int = 20, offset: Int = 0): GastosPaginados {
         return try {
             ApiClient.http.get("${ApiClient.BASE_URL}/gastos") {
                 parameter("idPareja", idPareja)
+                parameter("limit", limit)
+                parameter("offset", offset)
             }.body()
         } catch (e: Exception) {
-            emptyList()
+            GastosPaginados(gastos = emptyList(), total = 0, limit = limit, offset = offset, hayMas = false)
         }
     }
     // Marca la parte del usuario autenticado como pagada en un gasto
@@ -496,6 +499,23 @@ class AllTogetherService {
             Result.failure(e)
         }
     }
+
+    suspend fun eliminarRecurrente(idRecurrente: Int): Result<String> {
+        return try {
+            val response = ApiClient.http.delete("${ApiClient.BASE_URL}/recurrentes") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("idRecurrente" to idRecurrente))
+            }
+            if (response.status.value in 200..299) {
+                Result.success("Gasto recurrente eliminado correctamente")
+            } else {
+                Result.failure(Exception("Error al eliminar el gasto recurrente"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // Obtiene el balance entre los dos usuarios de una pareja
 // Devuelve quién le debe a quién y cuánto
     suspend fun getBalance(idPareja: Int): Result<Balance> {
@@ -537,6 +557,7 @@ class AllTogetherService {
             Result.failure(e)
         }
     }
+    // Actualiza el nombre del usuario en el servidor
     suspend fun actualizarPerfil(nombre: String): Result<String> {
         return try {
             val response = ApiClient.http.put("${ApiClient.BASE_URL}/usuario/perfil") {
@@ -552,6 +573,48 @@ class AllTogetherService {
             Result.failure(e)
         }
     }
+
+    suspend fun cambiarContrasena(contrasenaActual: String, contrasenaNueva: String): Result<String> {
+        return try {
+            val response = ApiClient.http.put("${ApiClient.BASE_URL}/usuario/contrasena") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf(
+                    "contrasenaActual" to contrasenaActual,
+                    "contrasenaNueva" to contrasenaNueva
+                ))
+            }
+            when (response.status.value) {
+                200 -> Result.success("Contraseña actualizada correctamente")
+                400 -> Result.failure(Exception("Esta cuenta usa Google. No se puede cambiar la contraseña"))
+                403 -> Result.failure(Exception("La contraseña actual no es correcta"))
+                else -> Result.failure(Exception("Error al cambiar la contraseña"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun cambiarEmail(nuevoEmail: String, contrasena: String): Result<String> {
+        return try {
+            val response = ApiClient.http.put("${ApiClient.BASE_URL}/usuario/email") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf(
+                    "email" to nuevoEmail,
+                    "contrasena" to contrasena
+                ))
+            }
+            when (response.status.value) {
+                200 -> Result.success("Email actualizado correctamente")
+                400 -> Result.failure(Exception("Esta cuenta usa Google. No se puede cambiar el email"))
+                403 -> Result.failure(Exception("Contraseña incorrecta"))
+                409 -> Result.failure(Exception("Ese email ya está en uso"))
+                else -> Result.failure(Exception("Error al cambiar el email"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun actualizarDivisa(divisa: String): Result<String> {
         return try {
             val response = ApiClient.http.put("${ApiClient.BASE_URL}/usuario/divisa") {

@@ -29,12 +29,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import com.example.alltogether.addexpense.AddExpenseActivity
 import com.example.alltogether.addexpense.AddRecurringExpenseActivity
 import com.example.alltogether.couplesettings.CoupleSettingsActivity
+import com.example.alltogether.couplesettings.RecurringExpensesActivity
 import com.example.alltogether.editarGasto.ExpenseDetailActivity
 import com.example.alltogether.model.Gasto
 import com.example.alltogether.network.AllTogetherService
@@ -234,16 +238,21 @@ fun PantallaDashboard(
     onBackClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onAddExpenseClick: () -> Unit,
-    onOpenExpenseDetail: (Gasto, String) -> Unit
+    onOpenExpenseDetail: (Gasto, String) -> Unit,
+    viewModel: DashboardViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val service = remember { AllTogetherService() }
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     val currencyManager = remember { CurrencyPreferencesManager(context) }
     val simboloDivisa = remember { currencyManager.obtenerSimbolo() }
-    var gastos by remember { mutableStateOf<List<Gasto>>(emptyList()) }
+
+    val gastos by viewModel.gastos.collectAsState()
+    val balance by viewModel.balance.collectAsState()
+    val hayMasGastos by viewModel.hayMas.collectAsState()
+    val cargandoMas by viewModel.cargandoMas.collectAsState()
+
     var recargarInterno by remember { mutableStateOf(recargar) }
-    var balance by remember { mutableStateOf<AllTogetherService.Balance?>(null) }
 
     var filtroEstado by remember { mutableStateOf("TODOS") }
     var filtroFecha by remember { mutableStateOf("TODOS") }
@@ -268,10 +277,27 @@ fun PantallaDashboard(
         .firstOrNull { it.first == filtroCategoria }
         ?.second ?: "Todas"
 
-    LaunchedEffect(recargar, recargarInterno) {
-        gastos = withContext(Dispatchers.IO) { service.getGastos(idPareja) }
-        val balanceResult = withContext(Dispatchers.IO) { service.getBalance(idPareja) }
-        balanceResult.onSuccess { balance = it }
+    // Carga inicial: usa caché si ya hay datos
+    LaunchedEffect(Unit) {
+        viewModel.cargarSiNecesario(idPareja)
+    }
+
+    // Recarga forzada cuando se añade/edita/elimina un gasto
+    var ultimoRecargar by remember { mutableStateOf(recargar) }
+    var ultimoRecargarInterno by remember { mutableStateOf(recargarInterno) }
+
+    LaunchedEffect(recargar) {
+        if (recargar != ultimoRecargar) {
+            ultimoRecargar = recargar
+            viewModel.recargar(idPareja)
+        }
+    }
+
+    LaunchedEffect(recargarInterno) {
+        if (recargarInterno != ultimoRecargarInterno) {
+            ultimoRecargarInterno = recargarInterno
+            viewModel.recargar(idPareja)
+        }
     }
 
     val gastosFiltrados = gastos
@@ -341,7 +367,7 @@ fun PantallaDashboard(
 
                         if (estanAlDia) {
                             Text(
-                                text = "¡Estáis al día! 🎉",
+                                text = "¡Estáis al día!",
                                 color = Color.White,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.SemiBold,
@@ -441,6 +467,32 @@ fun PantallaDashboard(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
+                }
+            }
+
+            item {
+                Button(
+                    onClick = {
+                        val intent = Intent(context, RecurringExpensesActivity::class.java)
+                        intent.putExtra("id_pareja", idPareja)
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = VerdePrincipal,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Repeat,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "  Ver gastos recurrentes",
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
 
@@ -730,6 +782,33 @@ fun PantallaDashboard(
                                 rolUsuario = rolActual,
                                 currencyManager = currencyManager
                             )
+                        }
+                    }
+                }
+
+                if (hayMasGastos) {
+                    item {
+                        Button(
+                            onClick = { viewModel.cargarMas() },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = VerdePrincipal,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            if (cargandoMas) {
+                                CircularProgressIndicator(
+                                    color = Color.White,
+                                    strokeWidth = 2.5.dp,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            } else {
+                                Text(
+                                    text = "Cargar más gastos",
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
                         }
                     }
                 }

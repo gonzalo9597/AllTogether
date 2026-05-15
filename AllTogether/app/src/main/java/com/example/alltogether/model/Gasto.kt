@@ -13,6 +13,16 @@ data class GastoResponse(
     val importeUsuario2: Double
 )
 
+
+@Serializable
+data class GastosPaginados(
+    val gastos: List<Gasto>,
+    val total: Int,
+    val limit: Int,
+    val offset: Int,
+    val hayMas: Boolean
+)
+
 @Serializable
 data class Gasto(
     val idGasto: Int,

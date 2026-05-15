@@ -59,6 +59,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.alltogether.login.LoginActivity
@@ -104,11 +105,26 @@ fun PantallaSettings() {
 
     // Estado del perfil
     var nombreUsuario by remember { mutableStateOf(sessionManager.getUserName()) }
-    val emailUsuario = remember { sessionManager.getUserEmail() }
+    var emailUsuario by remember { mutableStateOf(sessionManager.getUserEmail()) }
     var nombreEditando by remember { mutableStateOf(sessionManager.getUserName()) }
     var editandoNombre by remember { mutableStateOf(false) }
     var cargandoPerfil by remember { mutableStateOf(false) }
     var mensajePerfil by remember { mutableStateOf("") }
+
+    // Estado cambio de contraseña
+    var editandoContrasena by remember { mutableStateOf(false) }
+    var contrasenaActual by remember { mutableStateOf("") }
+    var contrasenaNueva by remember { mutableStateOf("") }
+    var contrasenaConfirmar by remember { mutableStateOf("") }
+    var cargandoContrasena by remember { mutableStateOf(false) }
+    var mensajeContrasena by remember { mutableStateOf("") }
+
+    // Estado cambio de email
+    var editandoEmail by remember { mutableStateOf(false) }
+    var nuevoEmail by remember { mutableStateOf("") }
+    var contrasenaParaEmail by remember { mutableStateOf("") }
+    var cargandoEmail by remember { mutableStateOf(false) }
+    var mensajeEmail by remember { mutableStateOf("") }
 
     var mostrarCardInfo by remember { mutableStateOf(ScreenUiState.mostrarCardInfoSettings) }
 
@@ -380,6 +396,285 @@ fun PantallaSettings() {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = mensajePerfil,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Black
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = VerdeSuave.copy(alpha = 0.55f)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    // --- Cambiar email ---
+                    if (!editandoEmail) {
+                        Button(
+                            onClick = {
+                                nuevoEmail = ""
+                                contrasenaParaEmail = ""
+                                editandoEmail = true
+                                mensajeEmail = ""
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = VerdeSuave,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Cambiar email",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = nuevoEmail,
+                            onValueChange = { nuevoEmail = it },
+                            label = { Text("Nuevo email", color = Color.Black.copy(alpha = 0.85f)) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                            singleLine = true
+                        )
+
+                        OutlinedTextField(
+                            value = contrasenaParaEmail,
+                            onValueChange = { contrasenaParaEmail = it },
+                            label = { Text("Contraseña actual", color = Color.Black.copy(alpha = 0.85f)) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation()
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    editandoEmail = false
+                                    mensajeEmail = ""
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = VerdeSuave,
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Cancelar", fontWeight = FontWeight.SemiBold)
+                            }
+
+                            Button(
+                                onClick = {
+                                    val email = nuevoEmail.trim()
+                                    if (email.isBlank() || !email.contains("@")) {
+                                        mensajeEmail = "Introduce un email válido"
+                                        return@Button
+                                    }
+                                    if (contrasenaParaEmail.isBlank()) {
+                                        mensajeEmail = "Introduce tu contraseña"
+                                        return@Button
+                                    }
+                                    cargandoEmail = true
+                                    mensajeEmail = ""
+                                    coroutineScope.launch {
+                                        val resultado = withContext(Dispatchers.IO) {
+                                            service.cambiarEmail(email, contrasenaParaEmail)
+                                        }
+                                        resultado
+                                            .onSuccess {
+                                                sessionManager.updateUserEmail(email)
+                                                emailUsuario = email
+                                                editandoEmail = false
+                                                mensajeEmail = "Email actualizado"
+                                            }
+                                            .onFailure { e ->
+                                                mensajeEmail = e.message ?: "Error al cambiar el email"
+                                            }
+                                        cargandoEmail = false
+                                    }
+                                },
+                                enabled = !cargandoEmail,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = VerdeSuave,
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                if (cargandoEmail) {
+                                    CircularProgressIndicator(
+                                        color = Color.Black,
+                                        strokeWidth = 2.5.dp,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                } else {
+                                    Text("Guardar", fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+                    }
+
+                    if (mensajeEmail.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = mensajeEmail,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Black
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // --- Cambiar contraseña ---
+                    if (!editandoContrasena) {
+                        Button(
+                            onClick = {
+                                contrasenaActual = ""
+                                contrasenaNueva = ""
+                                contrasenaConfirmar = ""
+                                editandoContrasena = true
+                                mensajeContrasena = ""
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = VerdeSuave,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Cambiar contraseña",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = contrasenaActual,
+                            onValueChange = { contrasenaActual = it },
+                            label = { Text("Contraseña actual", color = Color.Black.copy(alpha = 0.85f)) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation()
+                        )
+
+                        OutlinedTextField(
+                            value = contrasenaNueva,
+                            onValueChange = { contrasenaNueva = it },
+                            label = { Text("Nueva contraseña", color = Color.Black.copy(alpha = 0.85f)) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation()
+                        )
+
+                        OutlinedTextField(
+                            value = contrasenaConfirmar,
+                            onValueChange = { contrasenaConfirmar = it },
+                            label = { Text("Confirmar contraseña", color = Color.Black.copy(alpha = 0.85f)) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation()
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    editandoContrasena = false
+                                    mensajeContrasena = ""
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = VerdeSuave,
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Cancelar", fontWeight = FontWeight.SemiBold)
+                            }
+
+                            Button(
+                                onClick = {
+                                    if (contrasenaActual.isBlank()) {
+                                        mensajeContrasena = "Introduce tu contraseña actual"
+                                        return@Button
+                                    }
+                                    if (contrasenaNueva.length < 6) {
+                                        mensajeContrasena = "La nueva contraseña debe tener al menos 6 caracteres"
+                                        return@Button
+                                    }
+                                    if (contrasenaNueva != contrasenaConfirmar) {
+                                        mensajeContrasena = "Las contraseñas no coinciden"
+                                        return@Button
+                                    }
+                                    cargandoContrasena = true
+                                    mensajeContrasena = ""
+                                    coroutineScope.launch {
+                                        val resultado = withContext(Dispatchers.IO) {
+                                            service.cambiarContrasena(contrasenaActual, contrasenaNueva)
+                                        }
+                                        resultado
+                                            .onSuccess {
+                                                editandoContrasena = false
+                                                mensajeContrasena = "Contraseña actualizada"
+                                            }
+                                            .onFailure { e ->
+                                                mensajeContrasena = e.message ?: "Error al cambiar la contraseña"
+                                            }
+                                        cargandoContrasena = false
+                                    }
+                                },
+                                enabled = !cargandoContrasena,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = VerdeSuave,
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                if (cargandoContrasena) {
+                                    CircularProgressIndicator(
+                                        color = Color.Black,
+                                        strokeWidth = 2.5.dp,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                } else {
+                                    Text("Guardar", fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+                    }
+
+                    if (mensajeContrasena.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = mensajeContrasena,
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.Black
                         )
@@ -666,7 +961,8 @@ fun DropdownDivisaStyled(
 
             ExposedDropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
+                containerColor = Color.White  // ✅ única línea añadida
             ) {
                 options.forEach { option ->
                     DropdownMenuItem(
@@ -681,7 +977,6 @@ fun DropdownDivisaStyled(
         }
     }
 }
-
 @Composable
 fun InfoPreferenceStyled(
     title: String,
@@ -709,3 +1004,8 @@ fun InfoPreferenceStyled(
         )
     }
 }
+
+
+
+
+

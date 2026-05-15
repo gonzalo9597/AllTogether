@@ -46,19 +46,28 @@ class SessionManager(context: Context) {
     fun clearSession() {
         prefs.edit().clear().apply()
     }
-    fun updateUserName(name: String) {
-        prefs.edit().putString("user_name", name).apply()
-    }
-
-    // Devuelve el email del usuario, o cadena vacía si no hay sesión
-    fun getUserEmail(): String = prefs.getString("user_email", "") ?: ""
 
     // Devuelve el JWT token guardado, o null si no hay sesión
     fun getToken(): String? = prefs.getString("jwt_token", null)
 
+    // Devuelve el ID del usuario, o -1 si no hay sesión
+    fun getUserId(): Int = prefs.getInt("user_id", -1)
 
     // Devuelve el nombre del usuario, o cadena vacía si no hay sesión
     fun getUserName(): String = prefs.getString("user_name", "") ?: ""
+
+    // Actualiza solo el nombre del usuario en la sesión local
+    // Se usa cuando el usuario edita su nombre desde Preferencias
+    fun updateUserName(name: String) {
+        prefs.edit().putString("user_name", name).apply()
+    }
+
+    fun updateUserEmail(email: String) {
+        prefs.edit().putString("user_email", email).apply()
+    }
+
+    // Devuelve el email del usuario, o cadena vacía si no hay sesión
+    fun getUserEmail(): String = prefs.getString("user_email", "") ?: ""
 
     // Comprueba si hay una sesión activa — simplemente verifica si existe un token guardado
     // Se usa al arrancar la app para decidir si ir a Login o a MisParejas directamente

@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -665,8 +664,108 @@ fun PantallaEditRecurringExpense(recurrente: GastoRecurrente) {
                             color = Color.Black
                         )
                     }
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = VerdeSuave.copy(alpha = 0.55f)
+                    )
+
+                    Spacer(modifier = Modifier.height(18.dp))
+
+                    var mostrarConfirmacionEliminar by remember { mutableStateOf(false) }
+                    var cargandoEliminar by remember { mutableStateOf(false) }
+
+                    if (!mostrarConfirmacionEliminar) {
+                        Button(
+                            onClick = { mostrarConfirmacionEliminar = true },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFEF5350),
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Eliminar gasto recurrente",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = "¿Estás seguro? Esta acción no se puede deshacer",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Black,
+                            modifier = Modifier.padding(bottom = 10.dp)
+                        )
+
+                        Button(
+                            onClick = {
+                                cargandoEliminar = true
+                                coroutineScope.launch {
+                                    val resultado = withContext(Dispatchers.IO) {
+                                        service.eliminarRecurrente(recurrente.idRecurrente)
+                                    }
+                                    resultado
+                                        .onSuccess {
+                                            activity.setResult(Activity.RESULT_OK)
+                                            activity.finish()
+                                        }
+                                        .onFailure {
+                                            mensaje = "Error al eliminar el gasto recurrente"
+                                            mostrarConfirmacionEliminar = false
+                                            cargandoEliminar = false
+                                        }
+                                }
+                            },
+                            enabled = !cargandoEliminar,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFEF5350),
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (cargandoEliminar) {
+                                CircularProgressIndicator(
+                                    color = Color.Black,
+                                    strokeWidth = 2.5.dp
+                                )
+                            } else {
+                                Text(
+                                    text = "Sí, eliminar",
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = {
+                                mostrarConfirmacionEliminar = false
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = VerdeSuave,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp)
+                        ) {
+                            Text(
+                                text = "Cancelar",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+
+
+
+

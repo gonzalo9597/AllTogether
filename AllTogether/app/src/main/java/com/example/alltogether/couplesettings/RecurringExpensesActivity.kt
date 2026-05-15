@@ -215,7 +215,7 @@ fun PantallaRecurringExpenses(
                                     Spacer(modifier = Modifier.height(6.dp))
 
                                     Text(
-                                        text = "Consulta y edita los gastos recurrentes de la pareja desde un solo sitio",
+                                        text = "Consulta y edita los gastos recurrentes. Recuerda que éstos son sólo 'ordenes' para crear gastos normales cuando corresponde",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = GrisTexto
                                     )
