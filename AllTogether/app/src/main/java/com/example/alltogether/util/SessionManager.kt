@@ -46,12 +46,16 @@ class SessionManager(context: Context) {
     fun clearSession() {
         prefs.edit().clear().apply()
     }
+    fun updateUserName(name: String) {
+        prefs.edit().putString("user_name", name).apply()
+    }
+
+    // Devuelve el email del usuario, o cadena vacía si no hay sesión
+    fun getUserEmail(): String = prefs.getString("user_email", "") ?: ""
 
     // Devuelve el JWT token guardado, o null si no hay sesión
     fun getToken(): String? = prefs.getString("jwt_token", null)
 
-    // Devuelve el ID del usuario, o -1 si no hay sesión
-    fun getUserId(): Int = prefs.getInt("user_id", -1)
 
     // Devuelve el nombre del usuario, o cadena vacía si no hay sesión
     fun getUserName(): String = prefs.getString("user_name", "") ?: ""

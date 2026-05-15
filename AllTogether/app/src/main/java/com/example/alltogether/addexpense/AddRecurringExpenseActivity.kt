@@ -635,7 +635,7 @@ fun PantallaAddRecurringExpense(idPareja: Int) {
                                     service.crearGastoRecurrente(
                                         idPareja = idPareja,
                                         tituloGasto = titulo,
-                                        cantidadTotal = cantidadDouble,
+                                        cantidadTotal = Math.round(currencyManager.aEuros(cantidadDouble) * 100.0) / 100.0,
                                         frecuencia = frecuenciaSeleccionada,
                                         diaDelMes = valorDia,
                                         idCategoria = idCategoriaSeleccionada,

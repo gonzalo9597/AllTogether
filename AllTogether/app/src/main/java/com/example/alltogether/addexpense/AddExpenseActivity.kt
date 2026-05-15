@@ -603,7 +603,7 @@ fun PantallaAddExpense(idPareja: Int) {
                                     service.guardarGasto(
                                         idPareja = idPareja,
                                         tituloGasto = titulo,
-                                        cantidadTotal = cantidadDouble,
+                                        cantidadTotal = Math.round(currencyManager.aEuros(cantidadDouble) * 100.0) / 100.0,
                                         modoReparto = modoRepartoFinal,
                                         comentario = comentario,
                                         fechaGasto = fechaGasto,
@@ -622,7 +622,7 @@ fun PantallaAddExpense(idPareja: Int) {
                                             gasto.importeUsuario2
                                         }
 
-                                        mensaje = "Gasto guardado — tu parte es ${"%.2f".format(miImporte)}$simboloDivisa"
+                                        mensaje = "Gasto guardado — tu parte es ${currencyManager.formatear(miImporte ?: 0.0)}"
                                         titulo = ""
                                         cantidad = ""
                                         comentario = ""

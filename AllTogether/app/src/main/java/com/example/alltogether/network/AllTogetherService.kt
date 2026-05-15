@@ -537,6 +537,21 @@ class AllTogetherService {
             Result.failure(e)
         }
     }
+    suspend fun actualizarPerfil(nombre: String): Result<String> {
+        return try {
+            val response = ApiClient.http.put("${ApiClient.BASE_URL}/usuario/perfil") {
+                contentType(ContentType.Application.Json)
+                setBody(mapOf("nombre" to nombre))
+            }
+            if (response.status.value in 200..299) {
+                Result.success("Perfil actualizado correctamente")
+            } else {
+                Result.failure(Exception("Error al actualizar el perfil"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
     suspend fun actualizarDivisa(divisa: String): Result<String> {
         return try {
             val response = ApiClient.http.put("${ApiClient.BASE_URL}/usuario/divisa") {

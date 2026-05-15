@@ -102,6 +102,14 @@ fun PantallaSettings() {
     var mostrarConfirmacionEliminar by remember { mutableStateOf(false) }
     var cargandoEliminar by remember { mutableStateOf(false) }
 
+    // Estado del perfil
+    var nombreUsuario by remember { mutableStateOf(sessionManager.getUserName()) }
+    val emailUsuario = remember { sessionManager.getUserEmail() }
+    var nombreEditando by remember { mutableStateOf(sessionManager.getUserName()) }
+    var editandoNombre by remember { mutableStateOf(false) }
+    var cargandoPerfil by remember { mutableStateOf(false) }
+    var mensajePerfil by remember { mutableStateOf("") }
+
     var mostrarCardInfo by remember { mutableStateOf(ScreenUiState.mostrarCardInfoSettings) }
 
     val dismissState = rememberSwipeToDismissBoxState()
@@ -206,6 +214,180 @@ fun PantallaSettings() {
                 )
             }
 
+            // Card de Mi perfil
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = VerdePrincipal
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(18.dp)
+                ) {
+                    Text(
+                        text = "Mi perfil",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Email (solo lectura)
+                    InfoPreferenceStyled(
+                        title = "Email",
+                        value = emailUsuario
+                    )
+
+                    HorizontalDivider(
+                        thickness = 1.dp,
+                        color = VerdeSuave.copy(alpha = 0.55f)
+                    )
+
+                    if (!editandoNombre) {
+                        // Modo visualización del nombre
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Nombre",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Black
+                            )
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Text(
+                                text = nombreUsuario,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Black
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                nombreEditando = nombreUsuario
+                                editandoNombre = true
+                                mensajePerfil = ""
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = VerdeSuave,
+                                contentColor = Color.Black
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Cambiar nombre",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    } else {
+                        // Modo edición del nombre
+                        OutlinedTextField(
+                            value = nombreEditando,
+                            onValueChange = { nombreEditando = it },
+                            label = { Text("Nombre", color = Color.Black.copy(alpha = 0.85f)) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = Color.Black),
+                            singleLine = true
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    editandoNombre = false
+                                    mensajePerfil = ""
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = VerdeSuave,
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = "Cancelar",
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            Button(
+                                onClick = {
+                                    val nuevoNombre = nombreEditando.trim()
+                                    if (nuevoNombre.isBlank()) {
+                                        mensajePerfil = "El nombre no puede estar vacío"
+                                        return@Button
+                                    }
+                                    cargandoPerfil = true
+                                    mensajePerfil = ""
+                                    coroutineScope.launch {
+                                        val resultado = withContext(Dispatchers.IO) {
+                                            service.actualizarPerfil(nuevoNombre)
+                                        }
+                                        resultado
+                                            .onSuccess {
+                                                sessionManager.updateUserName(nuevoNombre)
+                                                nombreUsuario = nuevoNombre
+                                                editandoNombre = false
+                                                mensajePerfil = "Nombre actualizado"
+                                            }
+                                            .onFailure {
+                                                mensajePerfil = "Error al actualizar el nombre"
+                                            }
+                                        cargandoPerfil = false
+                                    }
+                                },
+                                enabled = !cargandoPerfil,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = VerdeSuave,
+                                    contentColor = Color.Black
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                if (cargandoPerfil) {
+                                    CircularProgressIndicator(
+                                        color = Color.Black,
+                                        strokeWidth = 2.5.dp,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Guardar",
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (mensajePerfil.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = mensajePerfil,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.Black
+                        )
+                    }
+                }
+            }
+
+            // Card de Divisa
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
