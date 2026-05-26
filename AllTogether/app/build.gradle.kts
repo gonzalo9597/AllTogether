@@ -73,13 +73,13 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
-
     implementation("io.ktor:ktor-client-core:2.3.12")
     implementation("io.ktor:ktor-client-cio:2.3.12")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.12")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.12")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
     implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
     implementation("com.google.firebase:firebase-messaging")
 
@@ -89,11 +89,15 @@ dependencies {
     implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
     implementation(libs.androidx.material3)
 
+    // Tests unitarios normales
     testImplementation("junit:junit:4.13.2")
+
+    // Tests instrumentados / Android
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation(platform("androidx.compose:compose-bom:2024.09.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
