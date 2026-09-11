@@ -2,14 +2,18 @@
 
 Gestión de gastos compartidos para parejas: quién ha pagado, cómo se reparte y quién debe a quién. Proyecto Intermodular, 2º de DAM.
 
-Equipo: [Sergio Sanz](https://github.com/Truffas) · [Gonzalo Sebastián](https://github.com/gonzalo9597) · [Sergio Malón](https://github.com/malonsergio)
+Equipo: [Gonzalo Sebastián](https://github.com/gonzalo9597) · [Sergio Malón](https://github.com/malonsergio) · [Sergio Sanz](https://github.com/Truffas) 
 
 ## Capturas
 
-<img src="screenshot-login.jpg" width="250" alt="Pantalla de login">
-<img src="screenshot-anadir-gasto.jpg" width="250" alt="Pantalla de añadir gasto">
-<img src="screenshot-dashboard.jpg" width="250" alt="Dashboard con el balance de gastos">
-<img src="screenshot-ajustes-pareja.jpg" width="250" alt="Ajustes de la pareja">
+<table>
+<tr>
+<td><img src="screenshot-login.jpg" width="200" alt="Pantalla de login"></td>
+<td><img src="screenshot-anadir-gasto.jpg" width="200" alt="Pantalla de añadir gasto"></td>
+<td><img src="screenshot-dashboard.jpg" width="200" alt="Dashboard con el balance de gastos"></td>
+<td><img src="screenshot-ajustes-pareja.jpg" width="200" alt="Ajustes de la pareja"></td>
+</tr>
+</table>
 
 (El backend en AWS ya no está activo, lo dimos de baja al terminar la evaluación para no seguir pagando RDS/Lambda. Estas capturas son de la app funcionando el día de la presentación.)
 
