@@ -6,8 +6,10 @@ Equipo: [Sergio Sanz](https://github.com/Truffas) · [Gonzalo Sebastián](https:
 
 ## Capturas
 
-![Dashboard](screenshot-dashboard.jpg)
-![Añadir gasto](screenshot-anadir-gasto.jpg)
+<img src="screenshot-login.jpg" width="250" alt="Pantalla de login">
+<img src="screenshot-anadir-gasto.jpg" width="250" alt="Pantalla de añadir gasto">
+<img src="screenshot-dashboard.jpg" width="250" alt="Dashboard con el balance de gastos">
+<img src="screenshot-ajustes-pareja.jpg" width="250" alt="Ajustes de la pareja">
 
 (El backend en AWS ya no está activo, lo dimos de baja al terminar la evaluación para no seguir pagando RDS/Lambda. Estas capturas son de la app funcionando el día de la presentación.)
 
